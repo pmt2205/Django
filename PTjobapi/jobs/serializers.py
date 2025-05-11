@@ -68,6 +68,11 @@ class UserSerializer(serializers.ModelSerializer):
         data['avatar'] = instance.avatar.url if instance.avatar else ''
         return data
 
+    def validate_role(self, value):
+        if value == 'admin':
+            raise serializers.ValidationError("Không được phép đăng ký vai trò quản trị viên.")
+        return value
+
     def create(self, validated_data):
         data = validated_data.copy()
         u = User(**data)

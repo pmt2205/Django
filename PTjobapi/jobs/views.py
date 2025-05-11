@@ -89,6 +89,12 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
 
     @action(detail=False, methods=['post'], permission_classes=[IsEmployer])
     def create_job(self, request):
+        if request.user.company.status != 'approved':
+            return Response(
+                {"error": "You can only create a job if your company is approved."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         serializer = serializers.JobCreateSerializer(data=request.data)
         if serializer.is_valid():
             job = serializer.save(company=request.user.company)
