@@ -3,7 +3,7 @@ from .models import (
     User, Company, Industry, Job,
     CandidateProfile, Application,
     Follow, Review, Notification,
-    ChatRoom, Message
+    ChatRoom, Message, CompanyImage
 )
 
 
@@ -19,10 +19,32 @@ class ItemSerializer(serializers.ModelSerializer):
             data['image'] = instance.image.url
         return data
 
+class CompanyImageSerializer(ItemSerializer):
+    class Meta:
+        model = CompanyImage
+        fields = ['image']
+
 class CompanySerializer(ItemSerializer):
+    images = CompanyImageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Company
-        fields = ['id', 'name', 'image', 'address', 'website', 'description', 'status']
+        fields = ['id', 'name', 'tax_code', 'address', 'images', 'description', 'status']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        images = request.FILES.getlist('images')
+
+        if len(images) < 3:
+            raise serializers.ValidationError({"images": "Vui lòng cung cấp ít nhất 3 hình ảnh."})
+
+        user = request.user
+        company = Company.objects.create(user=user, **validated_data)
+
+        for img in images:
+            CompanyImage.objects.create(company=company, image=img)
+
+        return company
 
 class JobSerializer(ItemSerializer):
     company = CompanySerializer(read_only=True)
@@ -137,8 +159,9 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['id', 'candidate', 'company']
         extra_kwargs = {
-            'candidate': {'write_only': True}
+            'candidate': {'read_only': True}  # ✅ Không cần write_only, chỉ read_only là đủ
         }
+
 
 
 # 10. ReviewSerializer (đánh giá)

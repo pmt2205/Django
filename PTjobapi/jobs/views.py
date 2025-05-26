@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, generics, parsers, decorators,
 from .models import Industry, Company, Job, Application, Follow, Review, Notification, ChatRoom, Message, User, CandidateProfile
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from jobs import serializers
+from jobs import serializers, paginators
 from .perms import IsEmployer, IsCandidate
 
 
@@ -33,7 +33,7 @@ class IndustryViewSet(viewsets.ViewSet, generics.ListAPIView):
 class CompanyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Company.objects.filter(active=True)
     serializer_class = serializers.CompanySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = paginators.ItemPaginator
 
     @action(methods=['post'], detail=False, permission_classes=[IsEmployer])
     def register(self, request):
@@ -42,15 +42,18 @@ class CompanyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAP
         if hasattr(user, 'company') and user.company is not None:
             return Response({'error': 'You already have a registered company.'}, status=400)
 
-        serializer = serializers.CompanySerializer(data=request.data)
+        serializer = serializers.CompanySerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            company = serializer.save(user=user)
-            return Response(serializers.CompanySerializer(company).data, status=status.HTTP_201_CREATED)
+            company = serializer.save()
+            return Response(serializers.CompanySerializer(company, context={'request': request}).data,
+                            status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Job.objects.filter(active=True)
     permission_classes = [permissions.AllowAny]
+    pagination_class = paginators.ItemPaginator
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -209,13 +212,61 @@ class CandidateProfileViewSet(viewsets.GenericViewSet):
             serializer.save()
             return Response(serializer.data)
 
-class FollowViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
-    queryset = Follow.objects.filter(active=True)
+class FollowViewSet(viewsets.GenericViewSet,
+                    generics.ListAPIView,
+                    generics.CreateAPIView,
+                    generics.DestroyAPIView):
     serializer_class = serializers.FollowSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        return Follow.objects.filter(candidate=self.request.user, active=True)
+
     def perform_create(self, serializer):
-        serializer.save(candidate=self.request.user)
+        candidate = self.request.user
+        serializer.save(candidate=candidate)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.candidate != request.user:
+            return Response({'detail': 'Bạn không có quyền hủy theo dõi này.'}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
+    class FollowViewSet(viewsets.GenericViewSet,
+                        generics.ListAPIView,
+                        generics.CreateAPIView):
+        # bỏ DestroyAPIView ra
+        serializer_class = serializers.FollowSerializer
+        permission_classes = [permissions.IsAuthenticated]
+
+        def get_queryset(self):
+            return Follow.objects.filter(candidate=self.request.user, active=True)
+
+        def perform_create(self, serializer):
+            candidate = self.request.user
+            company = serializer.validated_data['company']
+            if Follow.objects.filter(candidate=candidate, company=company, active=True).exists():
+                raise serializers.ValidationError("Bạn đã theo dõi công ty này.")
+            serializer.save(candidate=candidate)
+
+        @action(detail=False, methods=['delete'], url_path=r'unfollow/(?P<company_id>\d+)')
+        def unfollow(self, request, company_id=None):
+            follow = Follow.objects.filter(candidate=request.user, company_id=company_id, active=True).first()
+            if not follow:
+                return Response({'detail': 'Bạn chưa theo dõi công ty này.'}, status=status.HTTP_404_NOT_FOUND)
+            follow.delete()
+            return Response({'detail': 'Hủy theo dõi thành công.'}, status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'], url_path='followers')
+    def get_followers(self, request):
+        if not hasattr(request.user, 'company'):
+            return Response({'detail': 'Bạn không phải nhà tuyển dụng.'}, status=status.HTTP_403_FORBIDDEN)
+
+        followers_qs = Follow.objects.filter(company=request.user.company, active=True).select_related('candidate')
+        users = [f.candidate for f in followers_qs]
+        serializer = serializers.UserSerializer(users, many=True)
+        return Response(serializer.data)
+
 
 class ReviewViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
     queryset = Review.objects.filter(active=True)
