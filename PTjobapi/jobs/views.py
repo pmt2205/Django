@@ -49,7 +49,6 @@ class CompanyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAP
                             status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Job.objects.filter(active=True)
     permission_classes = [permissions.AllowAny]
@@ -87,6 +86,10 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
         location = self.request.query_params.get('location')
         if location:
             queryset = queryset.filter(location__icontains=location)
+
+        company_id = self.request.query_params.get('company_id')  # thêm dòng này
+        if company_id:
+            queryset = queryset.filter(company_id=company_id)  # thêm dòng này
 
         return queryset
 

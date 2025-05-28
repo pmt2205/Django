@@ -40,6 +40,7 @@ class Company(BaseModel):
     tax_code = models.CharField(max_length=20, unique=True)
     description = models.TextField()
     address = models.TextField()
+    # website = models.URLField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     verification_documents = CloudinaryField(null=True, blank=True)
 
@@ -119,6 +120,7 @@ class Application(BaseModel):
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='applied')
+    cv_custom = models.FileField(upload_to='cvs_custom/', null=True, blank=True)
     cover_letter = models.TextField(null=True, blank=True)
     applied_date = models.DateTimeField(auto_now_add=True)
 
