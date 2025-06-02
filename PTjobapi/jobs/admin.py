@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Count
 from django.template.response import TemplateResponse
 
-from jobs.models import Company, Industry, Job,CandidateProfile, Application,Follow, Review, Notification,ChatRoom, Message, User
+from jobs.models import Company, Industry, Job,CandidateProfile, Application,Follow, Review, Notification,ChatRoom, Message, User, CompanyImage
 from django.urls import path
 
 class MyAdminSite(admin.AdminSite):
@@ -17,14 +17,17 @@ class MyAdminSite(admin.AdminSite):
             'stats' : stats
         })
 
+class CompanyImageInline(admin.TabularInline):  # hoặc admin.StackedInline
+    model = CompanyImage
 
-
+class CompanyAdmin(admin.ModelAdmin):
+    inlines = [CompanyImageInline]
 admin_site = MyAdminSite(name='Job')
 
 
 admin_site.register(Industry)
 admin_site.register(Job)
-admin_site.register(Company)
+admin_site.register(Company, CompanyAdmin)
 admin_site.register(CandidateProfile)
 admin_site.register(Application)
 admin_site.register(Follow)

@@ -11,8 +11,8 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser]
 
-
-    @action(methods=['get', 'patch'], url_path='current-user', detail=False, permission_classes = [permissions.IsAuthenticated])
+    @action(methods=['get', 'patch'], url_path='current-user', detail=False,
+            permission_classes=[permissions.IsAuthenticated])
     def get_current_user(self, request):
         u = request.user
         if request.method.__eq__('PATCH'):
@@ -120,53 +120,75 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
         data = serializers.ApplicationSerializer(apps, many=True).data
         return Response(data)
 
-
+#sửa
 class ApplicationViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Application.objects.filter(active=True)
-    serializer_class = serializers.ApplicationSerializer  # Sử dụng serializer đã sửa
+    serializer_class = serializers.ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    # ✅ GET /applications/ (danh sách ứng tuyển của user)
+    def list(self, request):
+        if hasattr(request.user, 'candidateprofile'):
+            apps = Application.objects.filter(candidate=request.user, active=True)
+        elif hasattr(request.user, 'company'):
+            apps = Application.objects.filter(job__company=request.user.company, active=True)
+        else:
+            apps = Application.objects.none()
+        serializer = self.get_serializer(apps, many=True)
+        return Response(serializer.data)
+
+    # ✅ GET /applications/<id>/
+    def retrieve(self, request, pk=None):
+        try:
+            app = Application.objects.get(pk=pk, active=True)
+        except Application.DoesNotExist:
+            return Response({'error': 'Không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(self.serializer_class(app).data)
+
+    # ✅ POST /applications/apply/
     @action(methods=['post'], detail=False, permission_classes=[IsCandidate])
     def apply(self, request):
+        if not hasattr(request.user, 'candidateprofile'):
+            return Response({'error': 'Bạn cần tạo hồ sơ ứng viên trước'}, status=400)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        job_id = request.data.get('job')
+        job = Job.objects.filter(pk=job_id, active=True).first()
+        if not job:
+            return Response({'error': 'Công việc không tồn tại'}, status=404)
+
+        if Application.objects.filter(job=job, candidate=request.user).exists():
+            return Response({'error': 'Bạn đã ứng tuyển công việc này'}, status=400)
+
+        application = serializer.save(
+            job=job,
+            candidate=request.user,
+            status='applied'
+        )
+        return Response(self.get_serializer(application).data, status=201)
+
+    # ✅ PATCH /applications/<id>/
+    def partial_update(self, request, pk=None):
         try:
-            if not hasattr(request.user, 'candidateprofile'):
-                return Response(
-                    {'error': 'Bạn cần tạo hồ sơ ứng viên trước'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            app = Application.objects.select_related('job__company').get(pk=pk, active=True)
+        except Application.DoesNotExist:
+            return Response({'error': 'Không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
 
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+        # Chỉ employer của công ty đó mới được sửa
+        if not hasattr(request.user, 'company') or app.job.company != request.user.company:
+            return Response({'error': 'Không có quyền'}, status=status.HTTP_403_FORBIDDEN)
 
-            job_id = request.data.get('job')
-            try:
-                job = Job.objects.get(pk=job_id, active=True)
-            except Job.DoesNotExist:
-                return Response(
-                    {'error': 'Công việc không tồn tại'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+        new_status = request.data.get('status')
+        valid_statuses = [c[0] for c in Application.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response({'error': 'Trạng thái không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
 
-            if Application.objects.filter(job=job, candidate=request.user).exists():
-                return Response(
-                    {'error': 'Bạn đã ứng tuyển công việc này'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            application = serializer.save(
-                job=job,
-                candidate=request.user,
-                status='applied'
-            )
-            return Response(
-                self.get_serializer(application).data,
-                status=status.HTTP_201_CREATED
-            )
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        app.status = new_status
+        app.save()
+        return Response(self.serializer_class(app).data)
 
 class CandidateProfileViewSet(viewsets.GenericViewSet):
     queryset = CandidateProfile.objects.filter(active=True)
@@ -215,50 +237,32 @@ class CandidateProfileViewSet(viewsets.GenericViewSet):
             serializer.save()
             return Response(serializer.data)
 
+# sửa lại trong python
 class FollowViewSet(viewsets.GenericViewSet,
                     generics.ListAPIView,
-                    generics.CreateAPIView,
-                    generics.DestroyAPIView):
+                    generics.CreateAPIView):
     serializer_class = serializers.FollowSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
 
     def get_queryset(self):
         return Follow.objects.filter(candidate=self.request.user, active=True)
 
     def perform_create(self, serializer):
         candidate = self.request.user
+        company = serializer.validated_data['company']
+        if Follow.objects.filter(candidate=candidate, company=company, active=True).exists():
+            raise serializers.ValidationError("Bạn đã theo dõi công ty này.")
         serializer.save(candidate=candidate)
 
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if instance.candidate != request.user:
-            return Response({'detail': 'Bạn không có quyền hủy theo dõi này.'}, status=status.HTTP_403_FORBIDDEN)
-        return super().destroy(request, *args, **kwargs)
-
-    class FollowViewSet(viewsets.GenericViewSet,
-                        generics.ListAPIView,
-                        generics.CreateAPIView):
-        # bỏ DestroyAPIView ra
-        serializer_class = serializers.FollowSerializer
-        permission_classes = [permissions.IsAuthenticated]
-
-        def get_queryset(self):
-            return Follow.objects.filter(candidate=self.request.user, active=True)
-
-        def perform_create(self, serializer):
-            candidate = self.request.user
-            company = serializer.validated_data['company']
-            if Follow.objects.filter(candidate=candidate, company=company, active=True).exists():
-                raise serializers.ValidationError("Bạn đã theo dõi công ty này.")
-            serializer.save(candidate=candidate)
-
-        @action(detail=False, methods=['delete'], url_path=r'unfollow/(?P<company_id>\d+)')
-        def unfollow(self, request, company_id=None):
-            follow = Follow.objects.filter(candidate=request.user, company_id=company_id, active=True).first()
-            if not follow:
-                return Response({'detail': 'Bạn chưa theo dõi công ty này.'}, status=status.HTTP_404_NOT_FOUND)
-            follow.delete()
-            return Response({'detail': 'Hủy theo dõi thành công.'}, status=status.HTTP_204_NO_CONTENT)
+    @action(detail=True, methods=['delete'], url_path='unfollow')
+    def unfollow(self, request, pk=None):
+        follow = Follow.objects.filter(candidate=request.user, company_id=pk, active=True).first()
+        if not follow:
+            return Response({'detail': 'Bạn chưa theo dõi công ty này.'}, status=status.HTTP_404_NOT_FOUND)
+        follow.delete()
+        return Response({'detail': 'Hủy theo dõi thành công.'}, status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'], url_path='followers')
     def get_followers(self, request):
@@ -279,12 +283,14 @@ class ReviewViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIVi
     def perform_create(self, serializer):
         serializer.save(reviewer=self.request.user)
 
+
 class NotificationViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = serializers.NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Notification.objects.filter(user=self.request.user, active=True)
+
 
 class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = serializers.ChatRoomSerializer
@@ -293,6 +299,7 @@ class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         return ChatRoom.objects.filter(active=True).filter(employer=user) | ChatRoom.objects.filter(candidate=user)
+
 
 class MessageViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
     serializer_class = serializers.MessageSerializer

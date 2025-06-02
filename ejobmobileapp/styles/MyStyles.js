@@ -113,7 +113,7 @@ export default StyleSheet.create({
 
     locationSalaryRow: {
         flexDirection: 'row',
-        justifyContent: 'flex-start',
+        flexWrap: 'wrap', // Cho phép xuống dòng nếu dư chiều ngang        justifyContent: 'flex-start',
         alignItems: 'center',
         marginHorizontal: 12,
         marginBottom: 10,
@@ -127,29 +127,15 @@ export default StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 10,
         marginRight: 6,  // khoảng cách giữa 2 box
-    },
-
-    salaryBox: {
-        backgroundColor: 'white',
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#ffcccc',
-        paddingVertical: 6,
-        paddingHorizontal: 10,
+        marginBottom: 10,
     },
 
     locationText: {
         fontSize: 16,
         color: '#d40000',
-        fontWeight: '500',
         textAlign: 'center',
-    },
+        fontWeight: 'bold',
 
-    salaryText: {
-        fontSize: 16,
-        color: '#d40000',
-        fontWeight: '500',
-        textAlign: 'center',
     },
 
 
@@ -231,4 +217,63 @@ export default StyleSheet.create({
         fontSize: 16,
     },
 
+    companyListContainer: {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    companyItem: {
+        marginRight: 15,
+        alignItems: 'center',
+        width: 100,
+    },
+    companyImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 50,
+        marginBottom: 8,
+        resizeMode: 'cover',
+        backgroundColor: '#f0f0f0',
+    },
+    companyName: {
+        fontSize: 18,
+        fontWeight: '500',
+        color: '#333',
+        textAlign: 'center',
+        width: '100%',
+    },
+    infoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    infoBox: {
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        width: '30%',
+        paddingHorizontal: 8,
+        marginTop: 10,
+    },
+
+    infoText: {
+        fontSize: 14,
+        color: '#d40000',
+        textAlign: 'center',
+        marginTop: 4,
+        fontWeight: '500',
+        flexWrap: 'wrap',
+    },
+
+
+    iconWrapper: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    verticalDivider: {
+        width: 1,
+        height: 50,
+        backgroundColor: '#ffcccc',
+        marginHorizontal: 4,
+    },
 });
