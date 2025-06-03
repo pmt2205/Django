@@ -1,9 +1,10 @@
+from django.db import transaction
 from rest_framework import viewsets, permissions, generics, parsers, decorators, status
 from .models import Industry, Company, Job, Application, Follow, Review, Notification, ChatRoom, Message, User, CandidateProfile
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from jobs import serializers, paginators
-from .perms import IsEmployer, IsCandidate
+from .perms import IsEmployer, IsCandidate, has_been_accepted
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -15,15 +16,13 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
             permission_classes=[permissions.IsAuthenticated])
     def get_current_user(self, request):
         u = request.user
-        if request.method.__eq__('PATCH'):
+        if request.method == 'PATCH':
             for k, v in request.data.items():
-                if k in ['first_name', 'last_name']:
+                if k in ['first_name', 'last_name', 'phone', 'address']:
                     setattr(u, k, v)
-                elif k.__eq__('password'):
+                elif k == 'password':
                     u.set_password(v)
-
             u.save()
-
         return Response(serializers.UserSerializer(u).data)
 
 class IndustryViewSet(viewsets.ViewSet, generics.ListAPIView):
@@ -48,6 +47,23 @@ class CompanyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAP
             return Response(serializers.CompanySerializer(company, context={'request': request}).data,
                             status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['patch'], detail=False, permission_classes=[IsEmployer])
+    def update_info(self, request):
+        user = request.user
+
+        if not hasattr(user, 'company') or user.company is None:
+            return Response({'error': 'Bạn chưa đăng ký công ty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        company = user.company
+
+        allowed_fields = ['name', 'description', 'address']
+        for field in allowed_fields:
+            if field in request.data:
+                setattr(company, field, request.data[field])
+
+        company.save()
+        return Response(serializers.CompanySerializer(company, context={'request': request}).data)
 
 class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Job.objects.filter(active=True)
@@ -94,6 +110,7 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
         return queryset
 
     @action(detail=False, methods=['post'], permission_classes=[IsEmployer])
+    @transaction.atomic
     def create_job(self, request):
         if request.user.company.status != 'approved':
             return Response(
@@ -104,6 +121,19 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
         serializer = serializers.JobCreateSerializer(data=request.data)
         if serializer.is_valid():
             job = serializer.save(company=request.user.company)
+
+            # Tạo thông báo cho các candidate đã theo dõi công ty này
+            followers = Follow.objects.filter(company=request.user.company, active=True)
+            notifications = []
+            for follow in followers:
+                message = f"Công ty {request.user.company.name} vừa đăng tuyển vị trí '{job.title}'. Hãy ứng tuyển ngay!"
+                notifications.append(Notification(
+                    user=follow.candidate,
+                    message=message,
+                    is_read=False,
+                ))
+            Notification.objects.bulk_create(notifications)
+
             return Response(serializers.JobDetailSerializer(job, context={'request': request}).data, status=201)
         return Response(serializer.errors, status=400)
 
@@ -240,11 +270,17 @@ class CandidateProfileViewSet(viewsets.GenericViewSet):
 # sửa lại trong python
 class FollowViewSet(viewsets.GenericViewSet,
                     generics.ListAPIView,
-                    generics.CreateAPIView):
+                    generics.CreateAPIView,
+                    generics.DestroyAPIView):
+
     serializer_class = serializers.FollowSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-
+    @action(detail=False, methods=['get'], url_path='status/(?P<company_id>[^/.]+)')
+    def follow_status(self, request, company_id=None):
+        candidate = request.user
+        is_following = Follow.objects.filter(candidate=candidate, company_id=company_id, active=True).exists()
+        return Response({'is_following': is_following})
 
     def get_queryset(self):
         return Follow.objects.filter(candidate=self.request.user, active=True)
@@ -256,13 +292,15 @@ class FollowViewSet(viewsets.GenericViewSet,
             raise serializers.ValidationError("Bạn đã theo dõi công ty này.")
         serializer.save(candidate=candidate)
 
-    @action(detail=True, methods=['delete'], url_path='unfollow')
-    def unfollow(self, request, pk=None):
-        follow = Follow.objects.filter(candidate=request.user, company_id=pk, active=True).first()
-        if not follow:
-            return Response({'detail': 'Bạn chưa theo dõi công ty này.'}, status=status.HTTP_404_NOT_FOUND)
+
+    def destroy(self, request, pk=None):
+        try:
+            follow = Follow.objects.get(id=pk, candidate=request.user, active=True)
+        except Follow.DoesNotExist:
+            return Response({'detail': 'Không tìm thấy theo dõi này.'}, status=status.HTTP_404_NOT_FOUND)
         follow.delete()
-        return Response({'detail': 'Hủy theo dõi thành công.'}, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
     @action(detail=False, methods=['get'], url_path='followers')
     def get_followers(self, request):
@@ -275,13 +313,64 @@ class FollowViewSet(viewsets.GenericViewSet,
         return Response(serializer.data)
 
 
-class ReviewViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
-    queryset = Review.objects.filter(active=True)
+class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        return Review.objects.filter(parent__isnull=True).order_by('-created_date')
+
     def perform_create(self, serializer):
-        serializer.save(reviewer=self.request.user)
+        user = self.request.user
+        company_id = self.request.data.get('company')
+        parent_id = self.request.data.get('parent')
+
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            raise serializers.ValidationError("Công ty không tồn tại.")
+
+        # Nếu là phản hồi
+        if parent_id:
+            parent = Review.objects.filter(id=parent_id).first()
+            if not parent:
+                raise serializers.ValidationError("Phản hồi không hợp lệ.")
+            if parent.candidate == user or parent.company.user == user:
+                serializer.save(candidate=user, company=parent.company, parent=parent)
+                return
+            else:
+                raise serializers.ValidationError("Bạn không được phản hồi đánh giá này.")
+
+        # Nếu là đánh giá chính
+        if user.role != 'candidate':
+            raise serializers.ValidationError("Chỉ ứng viên mới có thể đánh giá công ty.")
+        if not has_been_accepted(user, company):
+            raise serializers.ValidationError("Bạn chưa từng được nhận vào làm tại công ty này.")
+
+        serializer.save(candidate=user, company=company)
+
+    # ✅ Tạo action phản hồi đánh giá
+    @action(detail=True, methods=['post'], url_path='reply')
+    def reply(self, request, pk=None):
+        parent_review = self.get_object()
+        user = request.user
+        content = request.data.get('content')
+
+        if not content:
+            return Response({"detail": "Nội dung phản hồi không được để trống."}, status=400)
+
+        if parent_review.candidate != user and parent_review.company.user != user:
+            return Response({"detail": "Bạn không được phản hồi đánh giá này."}, status=403)
+
+        reply = Review.objects.create(
+            candidate=user if user.role == 'candidate' else None,  # nếu employer thì None
+            company=parent_review.company,
+            parent=parent_review,
+            content=content,
+            rating=None
+        )
+        serializer = self.get_serializer(reply)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class NotificationViewSet(viewsets.ViewSet, generics.ListAPIView):

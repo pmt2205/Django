@@ -164,22 +164,18 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 
+
 # 10. ReviewSerializer (đánh giá)
 class ReviewSerializer(serializers.ModelSerializer):
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['reviewer'] = UserSerializer(instance.reviewer).data
-        return data
+    replies = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = ['id', 'rating', 'comment', 'reviewer', 'company', 'candidate', 'job']
-        extra_kwargs = {
-            'company': {'write_only': True},
-            'candidate': {'write_only': True},
-            'job': {'write_only': True},
-        }
+        fields = ['id', 'candidate', 'company', 'content', 'rating', 'parent', 'created_date', 'replies']
+        read_only_fields = ['candidate']
 
+    def get_replies(self, obj):
+        return ReviewSerializer(obj.replies.all(), many=True).data
 
 # 11. NotificationSerializer
 class NotificationSerializer(serializers.ModelSerializer):

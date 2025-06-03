@@ -143,26 +143,11 @@ class Follow(BaseModel):
 
 
 class Review(BaseModel):
-    RATING_CHOICES = [
-        (1, '1 sao'),
-        (2, '2 sao'),
-        (3, '3 sao'),
-        (4, '4 sao'),
-        (5, '5 sao'),
-    ]
-
-    reviewer = models.ForeignKey(User, related_name='given_reviews', on_delete=models.CASCADE)
-    company = models.ForeignKey(Company, related_name='reviews', on_delete=models.CASCADE, null=True, blank=True)
-    candidate = models.ForeignKey(User, related_name='reviews', on_delete=models.CASCADE, null=True, blank=True)
-    rating = models.IntegerField(choices=RATING_CHOICES)
-    comment = models.TextField()
-    job = models.ForeignKey(Job, on_delete=models.CASCADE, null=True, blank=True)
-
-    def __str__(self):
-        if self.company:
-            return f"Review for {self.company.name} by {self.reviewer.username}"
-        else:
-            return f"Review for {self.candidate.username} by {self.reviewer.username}"
+    candidate = models.ForeignKey(User, null=True, blank=True, on_delete=models.CASCADE, related_name='reviews')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='reviews')
+    content = models.TextField()
+    rating = models.IntegerField(null=True, blank=True)  # Từ 1 đến 5 sao, nếu là phản hồi thì có thể không cần rating
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
 
 
 class Notification(BaseModel):

@@ -123,7 +123,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-'yNQeWp162yLw964DnCnnETTl3LMaFL'
-'tS252ocb07hN0vneDk2kyO7ACNj8w1'
-Client_id = '2wXAbM63TTCFvugqPOrhc0oMIhBonqkwqcUmKEzJ'
-client_secret = 'Jqpp2cd6wIIYJEvaHBT1R8O1IbMK8ePs8NtINRmBJOpau0TvHHbBCAHFwgmFRi6vhpfjzUILf21UNRcF7lXJ8sAbOIJhUa6PKXkKBaj64z0JohlPY0eq5FCI09j40gqL'
+Client_id = 'iDhMA9hBs4x64KNdv69H6Ckzx5mnCJFFW6El5GBn'
+client_secret = 'RbkqWEycoaH3dUmY6E5JAp84X5tVEgalzHxIB35VF8k50jpKpaGEivk6etRdQk6MUVGjClM8HmJMuG67YJToeIGgv7ecs8U3ibasgQOxbIzqHLyyIck21u6s1OhilERQ'

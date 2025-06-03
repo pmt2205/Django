@@ -79,9 +79,9 @@ const Home = () => {
     };
 
     const handleSubmitSearch = () => {
-    // Chuyển sang màn SearchResult với từ khóa q, industryId hiện tại
-    nav.navigate("SearchResult", { q, initialIndustryId: industryId });
-  };
+        // Chuyển sang màn SearchResult với từ khóa q, industryId hiện tại
+        nav.navigate("SearchResult", { q, initialIndustryId: industryId });
+    };
 
 
     useEffect(() => {
@@ -132,40 +132,52 @@ const Home = () => {
 
             <View style={MyStyles.industrySection}>
                 <Text style={MyStyles.sectionTitle}>Việc làm gợi ý</Text>
-                {jobs.map((item) => (
-                    <View key={item.id.toString()} style={MyStyles.listItemShadow}>
-                        <TouchableOpacity
-                            onPress={() => nav.navigate('jobDetail', { jobId: item.id })}
-                            activeOpacity={0.9}
-                            style={MyStyles.listItem}
-                        >
-                            <Image
-                                style={MyStyles.avatar}
-                                source={{ uri: getCompanyImage(item.company) }}
-                            />
 
-                            <View style={{ flex: 1, justifyContent: 'center', paddingRight: 12 }}>
-                                <Text style={MyStyles.titleText}>{item.title}</Text>
-                                <Text style={MyStyles.listDescription} numberOfLines={1} ellipsizeMode="tail">
-                                    {item.company.name}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
+                <FlatList
+                    data={jobs}
+                    keyExtractor={(item, index) => `${item.id}-${index}`} // đảm bảo key duy nhất
+                    renderItem={({ item }) => (
+                        <View style={MyStyles.listItemShadow}>
+                            <TouchableOpacity
+                                onPress={() => nav.navigate('jobDetail', { jobId: item.id })}
+                                activeOpacity={0.9}
+                                style={MyStyles.listItem}
+                            >
+                                <Image
+                                    style={MyStyles.avatar}
+                                    source={{ uri: getCompanyImage(item.company) }}
+                                />
 
-                        <View style={MyStyles.locationSalaryRow}>
-                            <View style={MyStyles.locationBox}>
-                                <Text style={MyStyles.locationText}>{item.location}</Text>
-                            </View>
-                            <View style={MyStyles.locationBox}>
-                                <Text style={MyStyles.locationText}>
-                                    {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
-                                </Text>
+                                <View style={{ flex: 1, justifyContent: 'center', paddingRight: 12 }}>
+                                    <Text style={MyStyles.titleText}>{item.title}</Text>
+                                    <Text
+                                        style={MyStyles.listDescription}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                    >
+                                        {item.company.name}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+
+                            <View style={MyStyles.locationSalaryRow}>
+                                <View style={MyStyles.locationBox}>
+                                    <Text style={MyStyles.locationText}>{item.location}</Text>
+                                </View>
+                                <View style={MyStyles.locationBox}>
+                                    <Text style={MyStyles.locationText}>
+                                        {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
+                                    </Text>
+                                </View>
                             </View>
                         </View>
-                    </View>
-                ))}
-                {loading && <ActivityIndicator size="large" style={{ marginVertical: 20 }} />}
+                    )}
+                    ListFooterComponent={loading ? (
+                        <ActivityIndicator size="large" style={{ marginVertical: 20 }} />
+                    ) : null}
+                />
             </View>
+
 
             <View style={MyStyles.industrySection}>
                 <Text style={MyStyles.sectionTitle}>Công ty tiêu biểu</Text>
@@ -200,18 +212,18 @@ const Home = () => {
     );
 
     return (
-    <SafeAreaView style={MyStyles.container} edges={["left", "right", "bottom"]}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
-      <FlatList
-        data={[]}
-        renderItem={null}
-        ListHeaderComponent={<HomeHeader q={q} setQ={setQ} search={search} onSubmit={handleSubmitSearch} />}
-        ListFooterComponent={ListFooterComponent}
-        stickyHeaderIndices={[0]}
-        showsVerticalScrollIndicator={false}
-      />
-    </SafeAreaView>
-  );
+        <SafeAreaView style={MyStyles.container} edges={["left", "right", "bottom"]}>
+            <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
+            <FlatList
+                data={[]}
+                renderItem={null}
+                ListHeaderComponent={<HomeHeader q={q} setQ={setQ} search={search} onSubmit={handleSubmitSearch} />}
+                ListFooterComponent={ListFooterComponent}
+                stickyHeaderIndices={[0]}
+                showsVerticalScrollIndicator={false}
+            />
+        </SafeAreaView>
+    );
 };
 
 export default Home;

@@ -126,7 +126,7 @@ const SearchResult = () => {
 
             <FlatList
                 data={jobs}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item, index) => `${item.id}-${index}`}
                 onEndReached={() => loadJobs()}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={() =>
@@ -136,7 +136,6 @@ const SearchResult = () => {
                 }
                 renderItem={({ item }) => (
                     <TouchableOpacity
-                        key={item.id}
                         style={MyStyles.listItemShadow}
                         onPress={() => nav.navigate("jobDetail", { jobId: item.id })}
                     >
