@@ -169,6 +169,7 @@ export default StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 24,
+        marginBottom:10
     },
 
     authCard: {

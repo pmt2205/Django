@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import transaction
 from rest_framework import viewsets, permissions, generics, parsers, decorators, status
 from .models import Industry, Company, Job, Application, Follow, Review, Notification, ChatRoom, Message, User, CandidateProfile
@@ -381,24 +383,71 @@ class NotificationViewSet(viewsets.ViewSet, generics.ListAPIView):
         return Notification.objects.filter(user=self.request.user, active=True)
 
 
-class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView):
+class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
     serializer_class = serializers.ChatRoomSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        return ChatRoom.objects.filter(active=True).filter(employer=user) | ChatRoom.objects.filter(candidate=user)
+        if user.role == 'employer':
+            return ChatRoom.objects.filter(employer=user, active=True)
+        elif user.role == 'candidate':
+            return ChatRoom.objects.filter(candidate=user, active=True)
+        return ChatRoom.objects.none()
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        data = request.data
+
+        job_id = data.get('job_id')
+        if not job_id:
+            return Response({'job_id': ['This field is required.']}, status=400)
+
+        try:
+            job = Job.objects.get(pk=job_id)
+        except Job.DoesNotExist:
+            return Response({'job_id': ['Job not found.']}, status=404)
+
+        # Tự động xác định employer và candidate dựa trên user đăng nhập
+        if user.role == 'employer':
+            employer = user
+            candidate_id = data.get('candidate_id')
+            if not candidate_id:
+                return Response({'candidate_id': ['This field is required.']}, status=400)
+            try:
+                candidate = User.objects.get(pk=candidate_id, role='candidate')
+            except User.DoesNotExist:
+                return Response({'candidate_id': ['Candidate not found.']}, status=404)
+        elif user.role == 'candidate':
+            candidate = user
+            employer = job.company.user  # lấy từ job
+        else:
+            return Response({'detail': 'Invalid role.'}, status=403)
+
+        # Tạo room_id duy nhất nếu chưa có
+        room_id = str(uuid.uuid4())
+
+        # Kiểm tra trùng
+        chatroom, created = ChatRoom.objects.get_or_create(
+            employer=employer,
+            candidate=candidate,
+            job=job,
+            defaults={'room_id': room_id}
+        )
+
+        serializer = self.get_serializer(chatroom)
+        return Response(serializer.data, status=201 if created else 200)
 
 
 class MessageViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
-    serializer_class = serializers.MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         room_id = self.request.query_params.get('room_id')
-        if room_id:
-            return Message.objects.filter(room_id=room_id)
-        return Message.objects.none()
+        if not room_id:
+            return Message.objects.none()
+        return Message.objects.filter(room__room_id=room_id)
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)

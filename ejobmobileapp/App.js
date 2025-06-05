@@ -2,7 +2,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import Home from "./components/Home/Home";
 import Login from "./components/User/Login";
-import { Icon } from "react-native-paper";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import JobDetail from "./components/Home/JobDetail";
 import CompanyDetail from "./components/Home/CompanyDetail";
@@ -14,19 +13,64 @@ import MyUserReducer from "./reducers/MyUserReducer";
 import ApplyJobScreen from "./components/Home/ApplyJobScreen";
 import SearchResult from "./components/Home/SearchResult";
 import { Provider as PaperProvider } from 'react-native-paper';
-import MyApplications from "./components/Home/MyApplications";
+import MyApplications from "./components/User/Candidate/MyApplications";
 import ManageApplications from "./components/User/Employer/ManageApplications";
 import ManageCompany from "./components/User/Employer/ManageCompany";
+import NotificationScreen from "./components/User/NotificationScreen";
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+
 
 const Stack = createNativeStackNavigator();
 const StackNavigator = () => {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-      <Stack.Screen name="SearchResult" component={SearchResult} options={{ title: "Kết quả tìm kiếm" }} />
-      <Stack.Screen name="jobDetail" component={JobDetail} options={{ title: 'Chi tiết việc làm' }} />
-      <Stack.Screen name="companyDetail" component={CompanyDetail} options={{ title: 'Chi tiết công ty' }} />
-      <Stack.Screen name="ApplyJob" component={ApplyJobScreen} options={{ title: "Ứng tuyển việc làm" }} />
+      <Stack.Screen name="SearchResult" component={SearchResult} options={{
+        title: "Kết quả tìm kiếm",
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#ff5e5e', '#fffafc']}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        ),
+      }} />
+      <Stack.Screen name="jobDetail" component={JobDetail} options={{
+        title: "Việc làm chi tiết",
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#ff5e5e', '#fffafc']}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        ),
+      }} />
+      <Stack.Screen name="companyDetail" component={CompanyDetail} options={{
+        title: "Thông tin công ty",
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#ff5e5e', '#fffafc']}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        ),
+      }} />
+      <Stack.Screen name="ApplyJob" component={ApplyJobScreen} options={{
+        title: "Kết quả tìm kiếm",
+        headerBackground: () => (
+          <LinearGradient
+            colors={['#ff5e5e', '#fffafc']}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+          />
+        ),
+      }} />
+
     </Stack.Navigator>
   );
 };
@@ -36,45 +80,118 @@ const TabNavigator = () => {
   const user = useContext(MyUserContext);
 
   return (
-    <Tab.Navigator screenOptions={{ headerShown: true }}>
+    <Tab.Navigator screenOptions={{
+      headerShown: true, tabBarActiveTintColor: '#d40000',
+    }}>
       <Tab.Screen
-        name="home"
+        name="Trang chủ"
         component={StackNavigator}
         options={{
           headerShown: false,
-          tabBarIcon: () => <Icon size={30} source="home" />
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color="#d40000" />
+          ),
         }}
       />
 
       {user === null ? (
         <>
           <Tab.Screen
-            name="login"
+            name="Đăng nhập"
             component={Login}
-            options={{ headerShown: false, tabBarIcon: () => <Icon size={30} source="account" /> }}
+            options={{
+              headerShown: false,
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="account" size={size} color="#d40000" />
+              ),
+            }}
           />
           <Tab.Screen
-            name="register"
+            name="Đăng ký"
             component={Register}
-            options={{ title: 'Đăng ký', tabBarIcon: () => <Icon size={30} source="account-plus" /> }}
+            options={{
+              title: 'Đăng ký',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="account-plus" size={size} color="#d40000" />
+              ),
+            }}
           />
         </>
       ) : user.role === "employer" ? (
         <>
           <Tab.Screen
-            name="ManageCompany"
+            name="Quản lý công ty"
             component={ManageCompany}
-            options={{ title: 'Quản lý công ty', tabBarIcon: () => <Icon size={30} source="file-cog" /> }}
+            options={{
+              title: 'Quản lý công ty',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="file-cog" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
           />
           <Tab.Screen
-            name="ManageApplications"
+            name="Quản lý hồ sơ"
             component={ManageApplications}
-            options={{ title: 'Quản lý hồ sơ', tabBarIcon: () => <Icon size={30} source="file-cog" /> }}
+            options={{
+              title: 'Quản lý hồ sơ',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="file-cog" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
+            
           />
           <Tab.Screen
-            name="profile"
+            name="Thông báo"
+            component={NotificationScreen}
+            options={{
+              title: 'Thông báo',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="bell" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Tài khoản"
             component={Profile}
-            options={{ title: 'Tài khoản', tabBarIcon: () => <Icon size={30} source="account" /> }}
+            options={{
+              title: 'Tài khoản',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="account" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+              
+            }}
           />
         </>
       ) : (
@@ -82,12 +199,56 @@ const TabNavigator = () => {
           <Tab.Screen
             name="MyApplications"
             component={MyApplications}
-            options={{ title: 'Ứng tuyển', tabBarIcon: () => <Icon size={30} source="file-document" /> }}
+            options={{
+              title: 'Ứng tuyển',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="file-document" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
           />
           <Tab.Screen
-            name="profile"
+            name="Thông báo"
+            component={NotificationScreen}
+            options={{
+              title: 'Thông báo',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="bell" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Tài khoản"
             component={Profile}
-            options={{ title: 'Tài khoản', tabBarIcon: () => <Icon size={30} source="account" /> }}
+            options={{
+              title: 'Tài khoản',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="account" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
           />
         </>
       )}

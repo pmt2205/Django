@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button } from "react-native-paper";
@@ -7,94 +7,154 @@ import { Button } from "react-native-paper";
 import { MyUserContext, MyDispatchContext } from "../../configs/MyContexts";
 import MyStyles from "../../styles/MyStyles";
 
-// import PersonalInfo from "./PersonalInfo";
 import ChangePassword from "./ChangePassword";
 import FavoriteCompanies from "./FavoriteCompanies";
-// import SavedJobs from "./SavedJobs";
-// import ManageCompany from "./ManageCompany";
-import CreateJob from "./CreateJob";
+import EditProfile from "./EditProfile";
 
-const tabs = [
-  "Thông tin cá nhân",
-  "Đổi mật khẩu",
-  "Công ty yêu thích",
-  "Việc làm đã lưu",
-];
 
 const Profile = () => {
   const user = useContext(MyUserContext);
   const dispatch = useContext(MyDispatchContext);
   const nav = useNavigation();
-  const [activeTab, setActiveTab] = useState("Thông tin cá nhân");
+  const [activeTab, setActiveTab] = useState("Chỉnh sửa thông tin");
 
-  const isEmployer = user?.role === "employer";
+  // Tạo mảng tab tùy user.role
+  const tabs = ["Chỉnh sửa thông tin", "Đổi mật khẩu"];
+  if (user?.role === "candidate") {
+    tabs.push("Công ty yêu thích");
+  }
 
   const logout = async () => {
     await AsyncStorage.removeItem("token");
     dispatch({ type: "logout" });
-    nav.navigate("home");
+    nav.navigate("Trang chủ");
   };
 
-  const renderMenu = () => (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 20 }}>
-      {tabs.map((tab) => {
-        if ((tab === "Quản lý công ty" || tab === "Tạo việc làm mới") && !isEmployer) return null;
-        return (  
-          <TouchableOpacity
-            key={tab}
-            onPress={() => setActiveTab(tab)}
+  if (user === null) {
+    // User chưa load hoặc chưa đăng nhập
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#fa6666" />
+        <Text style={{ marginTop: 16 }}>Đang tải thông tin người dùng...</Text>
+      </View>
+    );
+  }
+
+  const renderUserHeader = () => {
+    const avatarUri = user?.avatar ? user.avatar : "https://via.placeholder.com/150";
+    return (
+      <View style={{ alignItems: "center", marginBottom: 24 }}>
+        <Image
+          source={{ uri: avatarUri }}
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            marginBottom: 10,
+            borderWidth: 2,
+            borderColor: "#fa6666",
+          }}
+          resizeMode="cover"
+        />
+        <Text style={{ fontSize: 22, fontWeight: "600", color: "#333" }}>
+          {user?.first_name} {user?.last_name}
+        </Text>
+      </View>
+    );
+  };
+
+    const renderTabs = () => (
+    <View style={{
+        flexDirection: "row",
+        justifyContent: "space-around",
+        marginBottom: 20,
+        backgroundColor: "#f8f8f8",
+        borderRadius: 12,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      }}>
+      {tabs.map((tab) => (
+        <TouchableOpacity
+          key={tab}
+          onPress={() => setActiveTab(tab)}
+          style={{
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor: activeTab === tab ? "#fa6666" : "transparent",
+          }}
+        >
+          <Text
             style={{
-              padding: 10,
-              marginRight: 10,
-              borderBottomWidth: activeTab === tab ? 2 : 0,
-              borderBottomColor: "#6200ee",
+              color: activeTab === tab ? "#fff" : "#333",
+              fontWeight: "500",
             }}
           >
-            <Text style={{ fontWeight: activeTab === tab ? "bold" : "normal" }}>{tab}</Text>
-          </TouchableOpacity>
-        );
-      })}
+            {tab}
+          </Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 
+
   const renderContent = () => {
     switch (activeTab) {
-      // case "Thông tin cá nhân":
-      //   return <PersonalInfo user={user} />;
+      case "Chỉnh sửa thông tin":
+        return <EditProfile />;
       case "Đổi mật khẩu":
         return <ChangePassword />;
       case "Công ty yêu thích":
         return <FavoriteCompanies />;
-      // case "Việc làm đã lưu":
-      //   return <SavedJobs />;
-      // case "Quản lý công ty":
-      //   return isEmployer ? <ManageCompany /> : null;
       default:
-        return null;
+        return (
+          <View style={{ padding: 16, backgroundColor: "#fff", borderRadius: 12 }}>
+            <Text style={{ fontSize: 16, color: "#333" }}>
+              Thông tin cá nhân sẽ được hiển thị ở đây.
+            </Text>
+          </View>
+        );
     }
   };
 
-  const avatarUri = user?.avatar?.secure_url || "https://via.placeholder.com/150";
-
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <View style={{ alignItems: "center", marginBottom: 20 }}>
-        <Image
-          source={{ uri: avatarUri }}
-          style={{ width: 120, height: 120, borderRadius: 60, marginBottom: 10 }}
-        />
-        <Text style={[MyStyles.subject, { fontSize: 22 }]}>
-          {user?.first_name} {user?.last_name}
-        </Text>
+    <View style={{ flex: 1, backgroundColor: "#fefefe" }}>
+      <ScrollView
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: 100, // để không bị nút "đăng xuất" che mất nội dung
+        }}
+      >
+        {renderUserHeader()}
+        {renderTabs()}
+        <View style={{ marginBottom: 30 }}>{renderContent()}</View>
+      </ScrollView>
+
+      <View
+        style={{
+          position: "absolute",
+          bottom: 20,
+          left: 20,
+          right: 20,
+        }}
+      >
+        <Button
+          mode="contained"
+          onPress={logout}
+          style={{
+            backgroundColor: "#fa6666",
+            borderRadius: 8,
+            paddingVertical: 6,
+          }}
+          labelStyle={{ color: "#fff", fontWeight: "bold" }}
+        >
+          Đăng xuất
+        </Button>
       </View>
-
-      {renderMenu()}
-      <View>{renderContent()}</View>
-
-      <Button mode="contained" onPress={logout} style={{ marginTop: 30 }}>
-        Đăng xuất
-      </Button>
-    </ScrollView>
+    </View>
   );
 };
 

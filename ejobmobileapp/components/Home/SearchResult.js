@@ -1,19 +1,21 @@
-// components/Home/SearchResult.js
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
     Image,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
 import MyStyles from "../../styles/MyStyles";
 import Apis, { endpoints } from "../../configs/Apis";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { Chip } from "react-native-paper";
 import { formatToMillions } from "../../utils/format";
+import HomeHeader
+    from "./HomeHeader";
+import { TextInput } from "react-native-paper";
+
+
 
 const SearchResult = () => {
     const nav = useNavigation();
@@ -77,97 +79,110 @@ const SearchResult = () => {
 
     const getCompanyImage = (company) => {
         if (!company) return "";
-        if (Array.isArray(company.images)) {
-            return company.images[0]?.image || "";
-        }
-        if (Array.isArray(company.image)) {
-            return company.image[0]?.image || "";
-        }
+        if (Array.isArray(company.images)) return company.images[0]?.image || "";
+        if (Array.isArray(company.image)) return company.image[0]?.image || "";
         return company.image || "";
     };
 
-    return (
-        <View style={MyStyles.container}>
-            <View style={MyStyles.industrySection}>
-                <Text style={MyStyles.sectionTitle}>Bộ lọc tìm kiếm</Text>
-
-                <View style={{ marginBottom: 10 }}>
-                    <Text>Địa điểm</Text>
-                    <TextInput
-                        style={MyStyles.input}
-                        placeholder="Nhập địa điểm"
-                        value={location}
-                        onChangeText={setLocation}
-                    />
-                </View>
-
-                <View style={{ marginBottom: 10 }}>
-                    <Text>Mức lương từ</Text>
-                    <TextInput
-                        style={MyStyles.input}
-                        placeholder="Nhập mức lương tối thiểu"
-                        value={salaryFrom}
-                        onChangeText={setSalaryFrom}
-                        keyboardType="numeric"
-                    />
-                </View>
-
-                <View style={{ marginBottom: 10 }}>
-                    <Text>Mức lương đến</Text>
-                    <TextInput
-                        style={MyStyles.input}
-                        placeholder="Nhập mức lương tối đa"
-                        value={salaryTo}
-                        onChangeText={setSalaryTo}
-                        keyboardType="numeric"
-                    />
+    const renderJob = ({ item, index }) => (
+        <TouchableOpacity
+            key={index}
+            style={MyStyles.listItemShadow}
+            onPress={() => nav.navigate("jobDetail", { jobId: item.id })}
+        >
+            <View style={MyStyles.listItem}>
+                <Image
+                    style={MyStyles.avatar}
+                    source={{ uri: getCompanyImage(item.company) }}
+                />
+                <View style={{ flex: 1, justifyContent: "center", paddingRight: 12 }}>
+                    <Text style={MyStyles.titleText}>{item.title}</Text>
+                    <Text
+                        style={MyStyles.listDescription}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >
+                        {item.company.name}
+                    </Text>
                 </View>
             </View>
 
+            <View style={MyStyles.locationSalaryRow}>
+                <View style={MyStyles.locationBox}>
+                    <Text style={MyStyles.locationText}>{item.location.split(':')[0]}
+                    </Text>
+                </View>
+                <View style={MyStyles.locationBox}>
+                    <Text style={MyStyles.locationText}>
+                        {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
+                    </Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
+    return (
+        <View style={MyStyles.container}>
+            {/* Thanh tìm kiếm cố định */}
+
+
+            {/* Danh sách và bộ lọc scroll được */}
             <FlatList
+                style={{ flex: 1 }}
                 data={jobs}
                 keyExtractor={(item, index) => `${item.id}-${index}`}
+                renderItem={renderJob}
                 onEndReached={() => loadJobs()}
                 onEndReachedThreshold={0.5}
-                ListFooterComponent={() =>
+                ListHeaderComponent={
+                    <View style={MyStyles.industrySection}>
+                        <HomeHeader
+                            q={q}
+                            setQ={setQ}
+                            search={(text, setText) => setText(text)}
+                            onSubmit={() => loadJobs(true)}
+                            searchOnly={true}
+                        />
+
+                        <TextInput
+                            label="Địa điểm"
+                            mode="outlined"
+                            value={location}
+                            onChangeText={setLocation}
+                            style={MyStyles.formInput}
+                            outlineColor="#ffcccc"
+                            activeOutlineColor="#ff8888"
+                        />
+
+                        <TextInput
+                            label="Mức lương từ"
+                            mode="outlined"
+                            value={salaryFrom}
+                            onChangeText={setSalaryFrom}
+                            keyboardType="numeric"
+                            style={MyStyles.formInput}
+                            outlineColor="#ffcccc"
+                            activeOutlineColor="#ff8888"
+                        />
+
+                        <TextInput
+                            label="Mức lương đến"
+                            mode="outlined"
+                            value={salaryTo}
+                            onChangeText={setSalaryTo}
+                            keyboardType="numeric"
+                            style={MyStyles.formInput}
+                            outlineColor="#ffcccc"
+                            activeOutlineColor="#ff8888"
+                        />
+
+                    </View>
+                }
+                ListFooterComponent={
                     loading ? (
                         <ActivityIndicator size="large" style={{ marginVertical: 20 }} />
                     ) : null
                 }
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={MyStyles.listItemShadow}
-                        onPress={() => nav.navigate("jobDetail", { jobId: item.id })}
-                    >
-                        <View style={MyStyles.listItem}>
-                            <Image
-                                style={MyStyles.avatar}
-                                source={{ uri: getCompanyImage(item.company) }}
-                            />
-                            <View style={{ flex: 1, justifyContent: "center", paddingRight: 12 }}>
-                                <Text style={MyStyles.titleText}>{item.title}</Text>
-                                <Text
-                                    style={MyStyles.listDescription}
-                                    numberOfLines={1}
-                                    ellipsizeMode="tail"
-                                >
-                                    {item.company.name}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={MyStyles.locationSalaryRow}>
-                            <View style={MyStyles.locationBox}>
-                                <Text style={MyStyles.locationText}>{item.location}</Text>
-                            </View>
-                            <View style={MyStyles.locationBox}>
-                                <Text style={MyStyles.locationText}>
-                                    {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
-                                </Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                )}
             />
         </View>
     );

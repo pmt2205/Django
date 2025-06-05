@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { View, ScrollView, TextInput, TouchableOpacity, Text, Alert, ActivityIndicator } from "react-native";
+import React, { useState } from "react";
+import { ScrollView, TouchableOpacity, View, Text, ActivityIndicator } from "react-native";
 import * as DocumentPicker from 'expo-document-picker';
 import Apis, { endpoints } from "../../configs/Apis";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import MyStyles from "../../styles/MyStyles";
+import { TextInput } from 'react-native-paper';
 
 const ApplyJob = ({ route, navigation }) => {
     const { job } = route.params;
     const [coverLetter, setCoverLetter] = useState('');
     const [cvFile, setCvFile] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [msg, setMsg] = useState(null);
 
-    // Chọn file CV
     const pickCV = async () => {
         try {
             const res = await DocumentPicker.getDocumentAsync({
@@ -24,23 +25,24 @@ const ApplyJob = ({ route, navigation }) => {
                     name: res.assets[0].name,
                     type: res.assets[0].mimeType
                 });
+                setMsg(null);
             }
         } catch (err) {
-            Alert.alert('Lỗi', 'Không thể chọn file CV.');
+            setMsg('Không thể chọn file CV.');
         }
     };
 
-
     const submitApplication = async () => {
         if (!cvFile) {
-            Alert.alert('Lỗi', 'Bạn chưa chọn file CV.');
+            setMsg('Bạn chưa chọn file CV.');
             return;
         }
 
         setUploading(true);
+        setMsg(null);
 
         try {
-            const token = await AsyncStorage.getItem('token'); // <- thêm dòng này
+            const token = await AsyncStorage.getItem('token');
 
             const formData = new FormData();
             formData.append('job', job.id);
@@ -51,77 +53,97 @@ const ApplyJob = ({ route, navigation }) => {
                 type: cvFile.type || 'application/pdf'
             });
 
-            const res = await Apis.post(endpoints['apply-job'], formData, {
+            await Apis.post(endpoints['apply-job'], formData, {
                 headers: {
-                    'Authorization': `Bearer ${token}`, // <- thêm dòng này
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
 
-            Alert.alert('Thành công', 'Bạn đã ứng tuyển thành công!');
-            navigation.goBack();
+            setMsg('Bạn đã ứng tuyển thành công!');
+            setTimeout(() => navigation.goBack(), 1500);
 
         } catch (error) {
             console.error(error);
-            Alert.alert('Lỗi', 'Ứng tuyển thất bại. Vui lòng thử lại.');
+            setMsg('Ứng tuyển thất bại. Vui lòng thử lại.');
         } finally {
             setUploading(false);
         }
     };
 
-
     return (
-        <ScrollView style={{ flex: 1, padding: 16 }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 12 }}>
-                Ứng tuyển: {job.title} - {job.company.name}
-            </Text>
+        <ScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
+            keyboardShouldPersistTaps="handled"
+        >
+            <View style={MyStyles.authWrapper}>
+                <View style={MyStyles.authCard}>
+                    <Text style={MyStyles.authTitle}>
+                        {job.title}
+                    </Text>
+                    <Text style={{ color: '#f87d7d', fontSize: 14, marginBottom: 20 }}>
+                        {job.company.name}
+                    </Text>
 
-            <TouchableOpacity
-                onPress={pickCV}
-                style={{
-                    backgroundColor: '#eee',
-                    padding: 12,
-                    borderRadius: 8,
-                    marginBottom: 16,
-                    borderWidth: 1,
-                    borderColor: cvFile ? '#4caf50' : '#ccc',
-                }}
-            >
-                <Text>{cvFile ? `Đã chọn: ${cvFile.name}` : 'Chọn file CV (pdf, doc, docx)'}</Text>
-            </TouchableOpacity>
 
-            <TextInput
-                placeholder="Thư mời (Cover Letter)"
-                multiline
-                numberOfLines={5}
-                value={coverLetter}
-                onChangeText={setCoverLetter}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    borderRadius: 8,
-                    padding: 12,
-                    textAlignVertical: 'top',
-                    marginBottom: 24,
-                }}
-            />
+                    <TouchableOpacity
+                        onPress={pickCV}
+                        activeOpacity={0.7}
+                    >
+                        <View
+                            style={{
+                                borderWidth: 1,
+                                borderColor: cvFile ? '#4caf50' : '#ff8888',
+                                borderRadius: 4,
+                                paddingHorizontal: 12,
+                                paddingVertical: 14,
+                                backgroundColor: '#fff',
+                                justifyContent: 'center',
+                                minHeight: 56,
+                                marginBottom: 12
+                            }}
+                        >
+                            <Text style={{ color: '#000' }}>
+                                {cvFile ? `Đã chọn: ${cvFile.name}` : 'Chọn file CV (pdf, doc, docx)'}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
 
-            <TouchableOpacity
-                onPress={submitApplication}
-                disabled={uploading}
-                style={{
-                    backgroundColor: '#ff5e5e',
-                    paddingVertical: 14,
-                    borderRadius: 12,
-                    alignItems: 'center',
-                }}
-            >
-                {uploading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Ứng tuyển</Text>
-                )}
-            </TouchableOpacity>
+                    <TextInput
+                        label="Thư mời"
+                        mode="outlined"
+                        value={coverLetter}
+                        onChangeText={setCoverLetter}
+                        style={MyStyles.formInput}
+                        outlineColor="#ffcccc"
+                        activeOutlineColor="#ff8888"
+                        multiline
+                        numberOfLines={4}
+                    />
+
+                    {msg && (
+                        <Text style={{
+                            color: msg.includes('thành công') ? 'green' : 'red',
+                            marginVertical: 8,
+                            textAlign: 'center'
+                        }}>
+                            {msg}
+                        </Text>
+                    )}
+
+                    <TouchableOpacity
+                        onPress={submitApplication}
+                        disabled={uploading}
+                        style={MyStyles.formButton}
+                    >
+                        {uploading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={MyStyles.formButtonLabel}>Ứng tuyển</Text>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
         </ScrollView>
     );
 };

@@ -34,6 +34,8 @@ const Register = () => {
 
   const pick = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log("Permission status:", status);
+
     if (status !== 'granted') {
       setErrors({ ...errors, avatar: "Cần cấp quyền truy cập ảnh!" });
       return;
@@ -46,11 +48,14 @@ const Register = () => {
       quality: 0.7
     });
 
+    console.log("Pick result:", result);
+
     if (!result.canceled) {
       setState(result.assets[0], "avatar");
       setErrors({ ...errors, avatar: null });
     }
   }
+
 
   const validate = () => {
     let valid = true;
@@ -107,9 +112,12 @@ const Register = () => {
       nav.navigate('login');
 
     } catch (error) {
+      console.log("Register error:", error);
+
       setErrors({
-        general: error.response?.data?.message || "Lỗi kết nối đến server"
+        general: error.response?.data?.message || error.message || "Lỗi kết nối đến server"
       });
+
     } finally {
       setLoading(false);
     }

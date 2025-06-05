@@ -2,10 +2,14 @@ import axios from "axios";
 
 const BASE_URL = 'https://tuongou.pythonanywhere.com/';
 
+
 export const endpoints = {
     'industries': '/industries/',
     'jobs': '/jobs/',
     'companies': '/companies/',
+    'my-company': '/companies/my_company/',
+    "register-company": "/companies/register/",
+    "update-company-info": "/companies/update_info/",
     'applications': '/applications/',
     'register': '/users/',
     'login': '/o/token/',
@@ -16,10 +20,9 @@ export const endpoints = {
     'my-applications': '/applications/',
     'follow-status': (companyId) => `/follows/status/${companyId}/`,
     'follow': '/follows/',
-    // 'unfollow': (followId) => `/follows/${followId}/`,
-    'unfollow': (id) => `/follows/${id}/`,  // ví dụ: id = 3 => /follows/3/
-
-
+    'unfollow': (id) => `/follows/${id}/`,
+    "notifications": "/notifications/",
+    "reviews": "/reviews/", 
 };
 
 export const authApis = (token) => {

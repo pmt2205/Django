@@ -6,6 +6,9 @@ import MyStyles from "../../styles/MyStyles";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { formatToMillions } from '../../utils/format'
 import { TouchableOpacity, Share } from 'react-native';
+import { format } from 'date-fns';
+
+
 
 const getCompanyImage = (company) => {
     if (!company) return '';
@@ -74,7 +77,7 @@ const JobDetail = ({ route, navigation }) => {
                     }}>
                         <Card.Content style={{ alignItems: 'center' }}>
                             <Text style={{ fontWeight: "bold", fontSize: 18 }}>{job.title}</Text>
-                            <Text style={{ fontWeight: "bold", fontSize: 18 }}> {job.company.name}
+                            <Text style={MyStyles.listDescription}> {job.company.name}
                             </Text>
                             <View style={MyStyles.infoRow}>
                                 {/* Box 1: Địa điểm */}
@@ -82,7 +85,8 @@ const JobDetail = ({ route, navigation }) => {
                                     <View style={MyStyles.iconWrapper}>
                                         <Icon name="map-marker" size={24} color="#d40000" />
                                     </View>
-                                    <Text style={MyStyles.infoText}>{job.location}</Text>
+                                    <Text style={MyStyles.infoText}>{job.location.split(':')[0]}
+                                    </Text>
                                 </View>
 
                                 {/* Divider 1 */}
@@ -118,39 +122,53 @@ const JobDetail = ({ route, navigation }) => {
 
                     {/* Nội dung chi tiết bên dưới */}
                     <View style={{ width: '100%', marginTop: 24 }}>
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Mô tả công việc:</Text> {job.description}
-                        </Text>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Mô tả công việc</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>
+                                {job.description}
+                            </Text>
+                        </View>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Yêu cầu</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.requirements}</Text>
+                        </View>
 
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Yêu cầu:</Text> {job.requirements}
-                        </Text>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Hình thức</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.job_type}</Text>
+                        </View>
 
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Hình thức:</Text> {job.job_type}
-                        </Text>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Thu nhập</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>
+                                {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
+                            </Text>
+                        </View>
 
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Thu nhập:</Text> {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
-                        </Text>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Quyền lợi</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>
+                                {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
+                            </Text>
+                        </View>
 
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Quyền lợi:</Text> {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
-                        </Text>
-
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Website công ty:</Text>{' '}
-                            <Text style={{ color: 'blue' }} onPress={() => Linking.openURL(job.company.website)}>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Website công ty</Text>
+                            <Text
+                                style={{ marginLeft: 20, marginTop: 4, color: 'blue' }}
+                                onPress={() => Linking.openURL(job.company.website)}
+                            >
                                 {job.company.website}
                             </Text>
-                        </Text>
+                        </View>
 
-                        <Text style={{ marginBottom: 6 }}>
-                            <Text style={{ fontWeight: "bold" }}>Giới thiệu công ty:</Text> {job.company.description}
-                        </Text>
+                        <View style={{ marginBottom: 6 }}>
+                            <Text style={{ fontWeight: "bold", fontSize: 18 }}>Giới thiệu công ty</Text>
+                            <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.company.description}</Text>
+                        </View>
 
                         <Text style={{ fontStyle: 'italic', color: '#888', marginTop: 12 }}>
-                            Ngày đăng: {new Date(job.created_date).toLocaleDateString()}
+                            Ngày đăng: {format(new Date(job.created_date), 'dd/MM/yyyy')}
                         </Text>
                     </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>

@@ -52,8 +52,8 @@ const Login = () => {
         const formData = new FormData();
         formData.append('username', user.username);
         formData.append('password', user.password);
-        formData.append('client_id', 'SAuXt4asBLMJxSBNpqlOqGBRjQvxWyIG8HxIGXBy');
-        formData.append('client_secret', 'PbJBF7nxc05ApQRjOBtHY4IzOXmLs3EfbeCqlZ2Ry5nDCOfp3f8ywSDcjBzhatHvtZnOP2LS3j6JXIakYH2Tj43sNRL9QHA4tXIxioChze4kxV7GUqnF95ADIK8Hf1oy');
+        formData.append('client_id', 'iDhMA9hBs4x64KNdv69H6Ckzx5mnCJFFW6El5GBn');
+        formData.append('client_secret', 'RbkqWEycoaH3dUmY6E5JAp84X5tVEgalzHxIB35VF8k50jpKpaGEivk6etRdQk6MUVGjClM8HmJMuG67YJToeIGgv7ecs8U3ibasgQOxbIzqHLyyIck21u6s1OhilERQ');
         formData.append('grant_type', 'password');
 
         let res = await Apis.post(endpoints['login'], formData, {
@@ -70,7 +70,7 @@ const Login = () => {
           type: "login",
           payload: u.data
         });
-        nav.navigate("home");
+        nav.navigate("Trang chủ");
       } catch (ex) {
         console.error(ex);
         setMsg("Đăng nhập thất bại, vui lòng kiểm tra lại thông tin!");

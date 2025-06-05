@@ -1,12 +1,8 @@
-import React, { useContext, useState } from "react";
+import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Button } from "react-native-paper"; 
-import { MyUserContext, MyDispatchContext } from "../../../configs/MyContexts";
 import MyStyles from "../../../styles/MyStyles";
-
-import CreateJob from "../CreateJob";
+import CompanyForm from "./CompanyForm";
+import CreateJob from "./CreateJob";
 
 
 const ManageCompany = () => {
@@ -21,13 +17,22 @@ const ManageCompany = () => {
             key={tab}
             onPress={() => setActiveTab(tab)}
             style={{
-              padding: 10,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
               marginRight: 10,
               borderBottomWidth: activeTab === tab ? 2 : 0,
-              borderBottomColor: "#6200ee",
+              borderBottomColor: "#fa6666",
             }}
           >
-            <Text style={{ fontWeight: activeTab === tab ? "bold" : "normal" }}>{tab}</Text>
+            <Text
+              style={{
+                fontWeight: activeTab === tab ? "bold" : "normal",
+                color: activeTab === tab ? "#fa6666" : "#444",
+                fontSize: 16,
+              }}
+            >
+              {tab}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -37,24 +42,21 @@ const ManageCompany = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "Công ty":
-        return (
-          <View>
-            <Text>Form tạo hoặc cập nhật công ty ở đây</Text>
-          </View>
-        );
+        return <CompanyForm />;
       case "Tạo việc làm":
-            return  <CreateJob />;
-        ;
+        return <CreateJob />;
       default:
         return null;
     }
   };
 
   return (
-    <View style={{ flex: 1, padding: 16 }}>
+    <View style={MyStyles.container}>
       {renderTabMenu()}
       {renderContent()}
     </View>
+
+    
   );
 };
 

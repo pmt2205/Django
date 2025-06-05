@@ -186,10 +186,7 @@ class NotificationSerializer(serializers.ModelSerializer):
 
 # 12. MessageSerializer
 class MessageSerializer(serializers.ModelSerializer):
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['sender'] = UserSerializer(instance.sender).data
-        return data
+    sender = UserSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -198,8 +195,6 @@ class MessageSerializer(serializers.ModelSerializer):
             'room': {'write_only': True}
         }
 
-
-# 13. ChatRoomSerializer
 class ChatRoomSerializer(serializers.ModelSerializer):
     employer = UserSerializer(read_only=True)
     candidate = UserSerializer(read_only=True)

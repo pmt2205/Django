@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
 import MyStyles from "../../styles/MyStyles";
 import Apis, { authApis, endpoints } from "../../configs/Apis";
@@ -30,85 +30,97 @@ const ChangePassword = () => {
     return true;
   };
 
-const handleChangePassword = async () => {
-  if (!validate()) return;
+  const handleChangePassword = async () => {
+    if (!validate()) return;
 
-  try {
-    setLoading(true);
-    const token = await AsyncStorage.getItem("token");
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
 
-    // Tạo formData tương tự login
-    const formData = new FormData();
-    formData.append("password", form.new_password);
+      // Tạo formData tương tự login
+      const formData = new FormData();
+      formData.append("password", form.new_password);
 
-    let res = await authApis(token).patch(endpoints["current-user"], formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      let res = await authApis(token).patch(endpoints["current-user"], formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    if (res.status === 200) {
-      setMsg("✅ Đổi mật khẩu thành công!");
-      setForm({ new_password: "", confirm_password: "" });
-    } else {
-      setMsg("❌ Đổi mật khẩu thất bại, lỗi server.");
+      if (res.status === 200) {
+        setMsg("Đổi mật khẩu thành công!");
+        setForm({ new_password: "", confirm_password: "" });
+      } else {
+        setMsg("❌ Đổi mật khẩu thất bại, lỗi server.");
+      }
+    } catch (err) {
+      console.error("Lỗi đổi mật khẩu:", err);
+
+      if (err.response) {
+        setMsg("❌ " + JSON.stringify(err.response.data));
+      } else if (err.request) {
+        setMsg("❌ Không nhận được phản hồi từ server.");
+      } else {
+        setMsg("❌ Lỗi khi gửi yêu cầu: " + err.message);
+      }
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Lỗi đổi mật khẩu:", err);
-
-    if (err.response) {
-      setMsg("❌ " + JSON.stringify(err.response.data));
-    } else if (err.request) {
-      setMsg("❌ Không nhận được phản hồi từ server.");
-    } else {
-      setMsg("❌ Lỗi khi gửi yêu cầu: " + err.message);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={MyStyles.authCard}>
-          <Text style={MyStyles.authTitle}>Đổi mật khẩu</Text>
+      <ScrollView style={MyStyles.container} contentContainerStyle={{ padding: 16 }}
+        keyboardShouldPersistTaps="handled">
+        <Text style={MyStyles.sectionTitle}>Đổi mật khẩu</Text>
 
-          {msg && <Text style={MyStyles.errorText}>{msg}</Text>}
+        {msg && <Text style={MyStyles.errorText}>{msg}</Text>}
 
-          <TextInput
-            label="Mật khẩu mới"
-            value={form.new_password}
-            onChangeText={(t) => setField(t, "new_password")}
-            secureTextEntry
-            mode="outlined"
-            style={MyStyles.formInput}
-            right={<TextInput.Icon icon="lock" />}
-          />
+        <TextInput
+          label="Mật khẩu mới"
+          mode="outlined"
+          value={form.new_password}
+          onChangeText={(t) => setField(t, "new_password")}
+          style={MyStyles.formInput}
+          outlineColor="#ffcccc"
+          activeOutlineColor="#ff8888"
+          right={<TextInput.Icon icon="lock" />}
+        />
 
-          <TextInput
-            label="Xác nhận mật khẩu"
-            value={form.confirm_password}
-            onChangeText={(t) => setField(t, "confirm_password")}
-            secureTextEntry
-            mode="outlined"
-            style={MyStyles.formInput}
-            right={<TextInput.Icon icon="lock-check" />}
-          />
+        <TextInput
+          label="Xác nhận mật khẩu"
+          mode="outlined"
+          value={form.confirm_password}
+          onChangeText={(t) => setField(t, "confirm_password")}
+          style={MyStyles.formInput}
+          outlineColor="#ffcccc"
+          activeOutlineColor="#ff8888"
+          right={<TextInput.Icon icon="lock-check" />}
+        />
 
-          <Button
-            onPress={handleChangePassword}
-            disabled={loading}
-            loading={loading}
-            mode="contained"
-            style={MyStyles.formButton}
-            labelStyle={MyStyles.formButtonLabel}
-          >
-            Cập nhật mật khẩu
-          </Button>
-        </View>
+        <TouchableOpacity
+          onPress={handleChangePassword}
+          disabled={loading}
+          mode="contained"
+
+          style={{
+            backgroundColor: "#fa6666",
+            paddingVertical: 12,
+            paddingHorizontal: 24,
+            borderRadius: 12,
+            alignItems: "center",
+            marginTop: 10,
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>Cập nhật mật khẩu</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );

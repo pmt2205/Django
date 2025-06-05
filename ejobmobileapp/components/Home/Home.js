@@ -1,4 +1,3 @@
-// screens/Home.js
 import {
     StatusBar,
     ActivityIndicator,
@@ -83,7 +82,6 @@ const Home = () => {
         nav.navigate("SearchResult", { q, initialIndustryId: industryId });
     };
 
-
     useEffect(() => {
         loadIndustries();
         loadCompanies();
@@ -106,10 +104,9 @@ const Home = () => {
         <>
             <View style={MyStyles.industrySection}>
                 <Text style={MyStyles.sectionTitle}>Một số ngành nghề hot</Text>
-                <View style={[MyStyles.row, MyStyles.wrap]}>
+                <View style={[MyStyles.row, MyStyles.wrap, { maxHeight: 110, overflow: 'hidden' }]}>
                     <TouchableOpacity onPress={() => search(null, setIndustryId)}>
                         <Chip
-                            icon="label"
                             style={[MyStyles.chip, industryId === null && MyStyles.chipSelected]}
                             textStyle={[MyStyles.chipText, industryId === null && MyStyles.chipTextSelected]}
                         >
@@ -119,7 +116,6 @@ const Home = () => {
                     {industries.map(ind => (
                         <TouchableOpacity key={`Ind${ind.id}`} onPress={() => search(ind.id, setIndustryId)}>
                             <Chip
-                                icon="label"
                                 style={[MyStyles.chip, industryId === ind.id && MyStyles.chipSelected]}
                                 textStyle={[MyStyles.chipText, industryId === ind.id && MyStyles.chipTextSelected]}
                             >
@@ -128,14 +124,14 @@ const Home = () => {
                         </TouchableOpacity>
                     ))}
                 </View>
+
             </View>
 
             <View style={MyStyles.industrySection}>
                 <Text style={MyStyles.sectionTitle}>Việc làm gợi ý</Text>
-
                 <FlatList
                     data={jobs}
-                    keyExtractor={(item, index) => `${item.id}-${index}`} // đảm bảo key duy nhất
+                    keyExtractor={(item, index) => `${item.id}-${index}`}
                     renderItem={({ item }) => (
                         <View style={MyStyles.listItemShadow}>
                             <TouchableOpacity
@@ -162,8 +158,11 @@ const Home = () => {
 
                             <View style={MyStyles.locationSalaryRow}>
                                 <View style={MyStyles.locationBox}>
-                                    <Text style={MyStyles.locationText}>{item.location}</Text>
+                                    <Text style={MyStyles.locationText}>
+                                        {item.location.split(':')[0]}
+                                    </Text>
                                 </View>
+
                                 <View style={MyStyles.locationBox}>
                                     <Text style={MyStyles.locationText}>
                                         {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
@@ -212,7 +211,7 @@ const Home = () => {
     );
 
     return (
-        <SafeAreaView style={MyStyles.container} edges={["left", "right", "bottom"]}>
+        <SafeAreaView style={MyStyles.container} edges={["left", "right"]}>
             <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
             <FlatList
                 data={[]}
