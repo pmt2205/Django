@@ -1,41 +1,28 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, View, Image, Linking, TouchableOpacity, Share } from "react-native";
-import { Text, Card } from "react-native-paper";
-import Apis, { endpoints } from "../../configs/Apis";
+import { useEffect, useState, useRef } from "react";
+import { ActivityIndicator, ScrollView, View, Image, TouchableOpacity, Share, Dimensions } from "react-native";
+import { Text, Card, TextInput } from "react-native-paper";
+import Apis, { authApis, endpoints, getCompanyLogo, getCompanyImages } from "../../configs/Apis";
 import MyStyles from "../../styles/MyStyles";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { authApis } from "../../configs/Apis";
-import { TextInput, Button } from "react-native-paper";
 
-
-const getCompanyImage = (company) => {
-    if (!company) return '';
-    if (Array.isArray(company.images)) {
-        return company.images[0]?.image || '';
-    }
-    if (Array.isArray(company.image)) {
-        return company.image[0]?.image || '';
-    }
-    return company.image || '';
-};
-
-
+const screenWidth = Dimensions.get('window').width;
 const CompanyDetail = ({ route, navigation }) => {
     const companyId = route.params?.companyId;
     const [company, setCompany] = useState(null);
     const [jobs, setJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isFollowing, setIsFollowing] = useState(false);
-    const [followId, setFollowId] = useState(null); // để bỏ theo dõi
+    const [followId, setFollowId] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [loadingReviews, setLoadingReviews] = useState(false);
     const [content, setContent] = useState("");
-    const [rating, setRating] = useState(""); // lưu điểm đánh giá (1-5)
+    const [rating, setRating] = useState("");
     const [submitting, setSubmitting] = useState(false);
-    const [replyContents, setReplyContents] = useState({});  // { reviewId: "Nội dung" }
-    const [replyLoading, setReplyLoading] = useState({});    // { reviewId: true/false }
-    const [replyVisible, setReplyVisible] = useState({});    // { reviewId: true/false }
+    const [replyContents, setReplyContents] = useState({});
+    const [replyLoading, setReplyLoading] = useState({});
+    const [replyVisible, setReplyVisible] = useState({});
+    const companyImages = company ? getCompanyImages(company) : [];
 
     const submitReply = async (reviewId) => {
         if (!replyContents[reviewId] || replyContents[reviewId].trim() === "") {
@@ -43,25 +30,19 @@ const CompanyDetail = ({ route, navigation }) => {
             return;
         }
         setReplyLoading(prev => ({ ...prev, [reviewId]: true }));
-
         try {
             const token = await AsyncStorage.getItem("token");
             const res = await authApis(token).post(`${endpoints['reviews']}${reviewId}/reply/`, {
                 content: replyContents[reviewId]
             });
-
-            // Sau khi gửi thành công, reset nội dung, tắt form và tải lại đánh giá
             setReplyContents(prev => ({ ...prev, [reviewId]: "" }));
             setReplyVisible(prev => ({ ...prev, [reviewId]: false }));
             loadReviews();
-
         } catch (error) {
             alert("Gửi phản hồi thất bại");
         }
         setReplyLoading(prev => ({ ...prev, [reviewId]: false }));
     };
-
-
     const loadReviews = async () => {
         if (!companyId) return;
         setLoadingReviews(true);
@@ -74,8 +55,6 @@ const CompanyDetail = ({ route, navigation }) => {
             setLoadingReviews(false);
         }
     };
-
-
     const submitReview = async () => {
         if (!content || !rating) {
             alert("Vui lòng nhập đầy đủ nội dung và điểm đánh giá");
@@ -91,23 +70,18 @@ const CompanyDetail = ({ route, navigation }) => {
         } catch (error) {
             alert("Gửi đánh giá thất bại");
         }
-
         setSubmitting(false);
     };
-
     const checkFollowStatus = async () => {
         const token = await AsyncStorage.getItem('token');
         const res = await authApis(token).get(endpoints['follow-status'](companyId));
         setIsFollowing(res.data.is_following);
-
         if (res.data.is_following) {
-            // Nếu muốn hiển thị nút "Bỏ theo dõi", cần biết ID follow
             const follows = await authApis(token).get(endpoints['follow']);
             const f = follows.data.find(f => f.company.id === companyId);
             setFollowId(f?.id);
         }
     };
-
     const followCompany = async () => {
         try {
             const token = await AsyncStorage.getItem('token');
@@ -118,34 +92,21 @@ const CompanyDetail = ({ route, navigation }) => {
             alert("Đã theo dõi công ty này!");
         }
     };
-
     const unfollowCompany = async () => {
         if (!followId) return;
-
         try {
             const token = await AsyncStorage.getItem('token');
             await authApis(token).delete(endpoints['unfollow'](followId));
             setIsFollowing(false);
             setFollowId(null);
-            checkFollowStatus(); // gọi lại để cập nhật
-
+            checkFollowStatus();
         } catch (err) {
-            if (err.response) {
-                console.error("Unfollow error - server response:", err.response.data);
-            } else if (err.request) {
-                console.error("Unfollow error - no response from server", err.request);
-            } else {
-                console.error("Unfollow error - other:", err.message);
-            }
         }
-
     };
-
     const loadCompany = async () => {
         try {
             const res = await Apis.get(`${endpoints['companies']}${companyId}/`);
             setCompany(res.data);
-
             const jobRes = await Apis.get(`${endpoints['jobs']}?company_id=${companyId}`);
             setJobs(jobRes.data.results);
         } catch (err) {
@@ -154,10 +115,8 @@ const CompanyDetail = ({ route, navigation }) => {
             setLoading(false);
         }
     };
-
     const StarRating = ({ rating, onChange }) => {
         const maxStars = 5;
-
         return (
             <View style={{ flexDirection: 'row', marginBottom: 12 }}>
                 {[...Array(maxStars)].map((_, i) => {
@@ -168,8 +127,7 @@ const CompanyDetail = ({ route, navigation }) => {
                                 fontSize: 28,
                                 color: starValue <= parseInt(rating) ? '#fa6666' : '#ccc',
                                 marginRight: 4,
-                            }}>
-                                ★
+                            }}> ★
                             </Text>
                         </TouchableOpacity>
                     );
@@ -177,7 +135,6 @@ const CompanyDetail = ({ route, navigation }) => {
             </View>
         );
     };
-
     useEffect(() => {
         loadCompany();
         checkFollowStatus();
@@ -191,7 +148,7 @@ const CompanyDetail = ({ route, navigation }) => {
             <View style={{ alignItems: 'center' }}>
                 {/* Logo công ty */}
                 <Image
-                    source={{ uri: getCompanyImage(company) }}
+                    source={{ uri: getCompanyLogo(company) }}
                     style={{
                         width: 100,
                         height: 100,
@@ -205,8 +162,6 @@ const CompanyDetail = ({ route, navigation }) => {
                         shadowRadius: 10,
                     }}
                 />
-
-                {/* Card trắng chứa thông tin công ty */}
                 <Card style={{
                     width: '100%',
                     backgroundColor: '#ffffff',
@@ -223,7 +178,6 @@ const CompanyDetail = ({ route, navigation }) => {
                     <Card.Content style={{ alignItems: 'center' }}>
                         <Text style={{ fontWeight: "bold", fontSize: 20 }}>{company.name}</Text>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
-                            {/* Nút theo dõi */}
                             <TouchableOpacity
                                 onPress={isFollowing ? unfollowCompany : followCompany}
                                 style={{
@@ -240,9 +194,6 @@ const CompanyDetail = ({ route, navigation }) => {
                                     {isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}
                                 </Text>
                             </TouchableOpacity>
-
-
-                            {/* Nút chia sẻ */}
                             <TouchableOpacity
                                 onPress={async () => {
                                     try {
@@ -259,121 +210,54 @@ const CompanyDetail = ({ route, navigation }) => {
                                     paddingHorizontal: 16,
                                     borderRadius: 12,
                                     alignItems: 'center'
-                                }}
-                            >
+                                }}>
                                 <Icon name="share-variant" size={24} color="#d40000" />
                             </TouchableOpacity>
                         </View>
                     </Card.Content>
                 </Card>
-
-                {/* Nội dung chi tiết công ty */}
                 <View style={{ width: '100%', marginTop: 24 }}>
                     <View style={{ marginBottom: 6 }}>
                         <Text style={{ fontWeight: "bold", fontSize: 18 }}>Mô tả công ty</Text>
-                        <Text style={{ marginLeft: 20, marginTop: 4 }}>
-                            {company.description}
-                        </Text>
+                        <Text style={{ marginLeft: 20, marginTop: 4 }}>{company.description}</Text>
                     </View>
-
                     <View style={{ marginBottom: 6 }}>
                         <Text style={{ fontWeight: "bold", fontSize: 18 }}>Mã số thuế</Text>
-                        <Text style={{ marginLeft: 20, marginTop: 4 }}>
-                            {company.tax_code}
-                        </Text>
+                        <Text style={{ marginLeft: 20, marginTop: 4 }}>{company.tax_code}</Text>
                     </View>
-
                     <View style={{ marginBottom: 6 }}>
                         <Text style={{ fontWeight: "bold", fontSize: 18 }}>Địa chỉ</Text>
-                        <Text style={{ marginLeft: 20, marginTop: 4 }}>
-                            {company.address}
-                        </Text>
+                        <Text style={{ marginLeft: 20, marginTop: 4 }}>{company.address}</Text>
                     </View>
-
                     {/* <View style={{ marginBottom: 6 }}>
                         <Text style={{ fontWeight: "bold", fontSize: 18 }}>Website</Text>
-                        <Text style={{ color: 'blue', marginLeft: 20, marginTop: 4 }} onPress={() => Linking.openURL(company.website)}>
-                            {company.website}
-                        </Text>
+                        <Text style={{ color: 'blue', marginLeft: 20, marginTop: 4 }} onPress={() => Linking.openURL(company.website)}>{company.website}</Text>
                     </View> */}
-
                 </View>
-
-                {/* Phần hình ảnh công ty */}
-                {company.images && company.images.length > 0 && (
-                    <View style={{ marginTop: 24, width: '100%' }}>
-                        <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Ảnh công ty</Text>
-
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ paddingHorizontal: 8 }}
-                        >
-                            {company.images.map((imgObj, index) => (
-                                <Image
-                                    key={index}
-                                    source={{ uri: imgObj.image }}
-                                    style={{
-                                        width: 120,
-                                        height: 120,
-                                        borderRadius: 8,
-                                        marginRight: 12,
-                                        backgroundColor: '#eee',
-                                    }}
-                                />
-                            ))}
-                        </ScrollView>
+                {companyImages.length > 0 && (
+                    <View style={{ marginTop: 24, width: '100%', position: 'relative' }}>
+                        <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Một số hình ảnh công ty</Text>
+                        <View style={{ width: '100%', height: 200 }}>
+                            <ScrollView
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                style={{ width: '100%', height: 200 }}
+                            >
+                                {companyImages.map((img, i) => (
+                                    <Image
+                                        key={i}
+                                        source={{ uri: img }}
+                                        style={{ width: screenWidth - 40, height: 200, borderRadius: 20, marginRight: 15, }}
+                                        resizeMode="cover"
+                                    />
+                                ))}
+                            </ScrollView>
+                        </View>
                     </View>
                 )}
-
-
-                {/* Nút chức năng */}
-                {/* <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 }}>
-                    <TouchableOpacity
-                        onPress={isFollowing ? unfollowCompany : followCompany}
-                        style={{
-                            backgroundColor: isFollowing ? '#ccc' : '#fa6666',
-                            paddingVertical: 12,
-                            paddingHorizontal: 24,
-                            borderRadius: 12,
-                            flex: 1,
-                            marginRight: 8,
-                            alignItems: 'center'
-                        }}
-                    >
-                        <Text style={{ color: isFollowing ? '#333' : '#fff', fontWeight: 'bold' }}>
-                            {isFollowing ? 'Bỏ theo dõi' : 'Theo dõi'}
-                        </Text>
-                    </TouchableOpacity>
-
-
-                    <TouchableOpacity
-                        onPress={async () => {
-                            try {
-                                await Share.share({
-                                    message: `Khám phá công ty ${company.name} tại ${company.website}`,
-                                });
-                            } catch (error) {
-                                alert('Không thể chia sẻ thông tin công ty.');
-                            }
-                        }}
-                        style={{
-                            backgroundColor: '#f1f1f1',
-                            paddingVertical: 12,
-                            paddingHorizontal: 16,
-                            borderRadius: 12,
-                            alignItems: 'center'
-                        }}
-                    >
-                        <Icon name="share-variant" size={24} color="#d40000" />
-                    </TouchableOpacity>
-                </View> */}
-
-
-                {/* Danh sách đánh giá */}
                 <View style={{ width: '100%', marginTop: 24 }}>
                     <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Đánh giá của ứng viên</Text>
-
                     {loadingReviews ? (
                         <ActivityIndicator size="small" color="#fa6666" />
                     ) : reviews.length === 0 ? (
@@ -384,29 +268,19 @@ const CompanyDetail = ({ route, navigation }) => {
                                 <Text style={{ fontWeight: "bold" }}>{review.candidate?.username || "Ứng viên"}</Text>
                                 <Text>Điểm: {review.rating}</Text>
                                 <Text>{review.content}</Text>
-                                <Text style={{ color: "#999", fontSize: 12, marginTop: 4 }}>
-                                    {new Date(review.created_date).toLocaleDateString()}
-                                </Text>
-
-                                {/* Hiển thị phản hồi con */}
+                                <Text style={{ color: "#999", fontSize: 12, marginTop: 4 }}>{new Date(review.created_date).toLocaleDateString()}</Text>
                                 {reviews.filter(r => r.parent === review.id).map(reply => (
                                     <Card key={reply.id} style={{ marginLeft: 20, marginTop: 8, padding: 8, backgroundColor: '#f9f9f9', borderRadius: 6 }}>
                                         <Text style={{ fontWeight: 'bold', fontStyle: 'italic' }}>{reply.candidate?.username || 'Công ty'}</Text>
                                         <Text>{reply.content}</Text>
-                                        <Text style={{ color: '#999', fontSize: 11, marginTop: 2 }}>
-                                            {new Date(reply.created_date).toLocaleDateString()}
-                                        </Text>
+                                        <Text style={{ color: '#999', fontSize: 11, marginTop: 2 }}>{new Date(reply.created_date).toLocaleDateString()}</Text>
                                     </Card>
                                 ))}
-
-                                {/* Nút mở form phản hồi */}
                                 <TouchableOpacity onPress={() => setReplyVisible(prev => ({ ...prev, [review.id]: !prev[review.id] }))} style={{ marginTop: 8 }}>
                                     <Text style={{ color: '#fa6666', fontWeight: 'bold' }}>
                                         {replyVisible[review.id] ? 'Đóng phản hồi' : 'Phản hồi'}
                                     </Text>
                                 </TouchableOpacity>
-
-                                {/* Form phản hồi */}
                                 {replyVisible[review.id] && (
                                     <View style={{ marginTop: 8 }}>
                                         <TextInput
@@ -418,9 +292,7 @@ const CompanyDetail = ({ route, navigation }) => {
                                             outlineColor="#ffcccc"
                                             activeOutlineColor="#ff8888"
                                             multiline
-                                            numberOfLines={4}
-                                        />
-
+                                            numberOfLines={4} />
                                         <TouchableOpacity
                                             onPress={() => submitReply(review.id)}
                                             disabled={replyLoading[review.id]}
@@ -432,17 +304,13 @@ const CompanyDetail = ({ route, navigation }) => {
                                                 flex: 1,
                                                 alignItems: 'center',
                                                 opacity: replyLoading[review.id] ? 0.8 : 1
-                                            }}
-                                        >
+                                            }}>
                                             <Text style={{ color: replyLoading[review.id] ? '#333' : '#fff', fontWeight: 'bold' }}>
                                                 {replyLoading[review.id] ? 'Đang gửi...' : 'Gửi phản hồi'}
                                             </Text>
                                         </TouchableOpacity>
-
                                     </View>
                                 )}
-
-                                {/* Hiển thị các phản hồi nếu có */}
                                 {review.replies && review.replies.map((rep, idx) => (
                                     <View key={idx} style={{ paddingLeft: 16, marginTop: 4 }}>
                                         <Text style={{ color: '#888' }}>{rep.user?.username ?? 'Ẩn danh'} trả lời:</Text>
@@ -455,8 +323,6 @@ const CompanyDetail = ({ route, navigation }) => {
 
                     <View style={{ marginTop: 30, padding: 16, backgroundColor: "#fff", borderRadius: 8, elevation: 3 }}>
                         <Text style={{ fontWeight: "bold", fontSize: 18, marginBottom: 12 }}>Đánh giá công ty</Text>
-
-
                         <TextInput
                             label="Nội dung đánh giá"
                             mode="outlined"
@@ -466,15 +332,11 @@ const CompanyDetail = ({ route, navigation }) => {
                             outlineColor="#ffcccc"
                             activeOutlineColor="#ff8888"
                             multiline
-                            numberOfLines={4}
-                        />
-
+                            numberOfLines={4} />
                         <StarRating rating={rating} onChange={setRating} />
                         <Text style={{ marginBottom: 12, color: '#666' }}>
                             {rating ? `Bạn đã chọn: ${rating} sao` : 'Chọn số sao để đánh giá'}
                         </Text>
-
-
                         <TouchableOpacity
                             onPress={submitReview}
                             disabled={submitting}
@@ -486,18 +348,13 @@ const CompanyDetail = ({ route, navigation }) => {
                                 alignItems: 'center',
                                 opacity: submitting ? 0.8 : 1,
                                 marginTop: 8
-                            }}
-                        >
+                            }}>
                             <Text style={{ color: submitting ? '#333' : '#fff', fontWeight: 'bold' }}>
                                 {submitting ? 'Đang gửi...' : 'Gửi đánh giá'}
                             </Text>
                         </TouchableOpacity>
-
                     </View>
                 </View>
-
-
-                {/* Danh sách việc làm */}
                 <View style={{ width: '100%', marginTop: 24 }}>
                     <Text style={[MyStyles.sectionTitle, { marginBottom: 8 }]}>Việc làm đang tuyển</Text>
                     {jobs.length === 0 ? (
@@ -507,25 +364,20 @@ const CompanyDetail = ({ route, navigation }) => {
                             <TouchableOpacity
                                 key={job.id}
                                 onPress={() => navigation.navigate("jobDetail", { jobId: job.id })}
-                                style={MyStyles.listItemShadow}
-                            >
+                                style={MyStyles.listItemShadow}>
                                 <View style={MyStyles.listItem}>
                                     <Image
-                                        source={{ uri: getCompanyImage(job.company) || getCompanyImage(company) }}
-                                        style={MyStyles.avatar}
-                                    />
-
+                                        source={{ uri: getCompanyLogo(job.company) }}
+                                        style={MyStyles.avatar} />
                                     <View style={{ flex: 1 }}>
                                         <Text style={MyStyles.titleText}>{job.title}</Text>
                                         <Text style={MyStyles.listDescription}>{job.location.split(':')[0]}</Text>
-
                                     </View>
                                 </View>
                             </TouchableOpacity>
                         ))
                     )}
                 </View>
-
             </View>
         </ScrollView>
     );

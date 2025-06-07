@@ -123,5 +123,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'mt.tuongpham@gmail.com'
+EMAIL_HOST_PASSWORD = 'bnls vung xagc xsem'
+
+DEFAULT_FROM_EMAIL = 'mt.tuongpham@gmail.com'
+FRONTEND_URL = 'https://yourfrontend.com'  # hoặc http://localhost:3000 nếu dev
+
 Client_id = 'iDhMA9hBs4x64KNdv69H6Ckzx5mnCJFFW6El5GBn'
 client_secret = 'RbkqWEycoaH3dUmY6E5JAp84X5tVEgalzHxIB35VF8k50jpKpaGEivk6etRdQk6MUVGjClM8HmJMuG67YJToeIGgv7ecs8U3ibasgQOxbIzqHLyyIck21u6s1OhilERQ'

@@ -49,7 +49,7 @@ class Company(BaseModel):
 
 class CompanyImage(models.Model):
     company = models.ForeignKey('Company', on_delete=models.CASCADE, related_name='images')
-    image = CloudinaryField()
+    image = models.ImageField(upload_to='company_images/')
 
 
 class Industry(BaseModel):
@@ -66,6 +66,13 @@ class Job(BaseModel):
         ('freelance', 'Freelance'),
     ]
 
+    JOB_TIME_CHOICES = [
+        ('morning', '6 - 12h'),
+        ('afternoon', '12 - 18h'),
+        ('evening', '18 - 0h'),
+        ('late', '0h - 6h'),
+    ]
+
     SALARY_TYPE_CHOICES = [
         ('hourly', 'Theo giờ'),
         ('daily', 'Theo ngày'),
@@ -78,7 +85,8 @@ class Job(BaseModel):
     requirements = models.TextField()
     industry = models.ForeignKey(Industry, on_delete=models.PROTECT)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    job_type = models.CharField(max_length=10, choices=JOB_TYPE_CHOICES)
+    # job_type = models.CharField(max_length=10, choices=JOB_TYPE_CHOICES)
+    time_type = models.CharField(max_length=10, choices=JOB_TIME_CHOICES)
     salary_type = models.CharField(max_length=10, choices=SALARY_TYPE_CHOICES)
     salary_from = models.DecimalField(max_digits=12, decimal_places=2)
     salary_to = models.DecimalField(max_digits=12, decimal_places=2)

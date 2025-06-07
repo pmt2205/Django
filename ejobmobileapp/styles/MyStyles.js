@@ -138,6 +138,24 @@ export default StyleSheet.create({
 
     },
 
+    btnAll: {
+        backgroundColor: '#ff5e5e',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        flex: 1,
+        marginRight: 8,
+        alignItems: 'center'
+    },
+
+    btnAlltt: {
+        backgroundColor: '#f1f1f1',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginRight: 8
+    },
 
     // dăng nhao
 
@@ -169,7 +187,7 @@ export default StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: 24,
-        marginBottom:10
+        marginBottom: 10
     },
 
     authCard: {
@@ -218,6 +236,19 @@ export default StyleSheet.create({
         fontSize: 16,
     },
 
+    boxwhite: {
+        width: '100%',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        paddingTop: 40,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        marginTop: -10, // đẩy lên dưới logo
+        zIndex: 1
+    },
     companyListContainer: {
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -226,6 +257,18 @@ export default StyleSheet.create({
         marginRight: 15,
         alignItems: 'center',
         width: 100,
+    },
+    companyLogo: {
+        width: 100,
+        height: 100,
+        borderRadius: 10,
+        marginBottom: -40,
+        zIndex: 2,
+        backgroundColor: '#fff',
+        elevation: 12, // Android
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
     },
     companyImage: {
         width: 80,
@@ -277,4 +320,22 @@ export default StyleSheet.create({
         backgroundColor: '#ffcccc',
         marginHorizontal: 4,
     },
+
+    btnmsg: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        backgroundColor: '#ff5e5e',
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        zIndex: 1000,
+    }
 });

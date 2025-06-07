@@ -1,27 +1,16 @@
 import { useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import MyStyles from "../../styles/MyStyles";
-import Apis, { endpoints } from "../../configs/Apis";
+import Apis, { endpoints, getCompanyLogo } from "../../configs/Apis";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { formatToMillions } from "../../utils/format";
-import HomeHeader
-    from "./HomeHeader";
+import HomeHeader from "./HomeHeader";
 import { TextInput } from "react-native-paper";
-
-
 
 const SearchResult = () => {
     const nav = useNavigation();
     const route = useRoute();
     const { q: initialQ = "", initialIndustryId = null } = route.params || {};
-
     const [q, setQ] = useState(initialQ);
     const [industryId, setIndustryId] = useState(initialIndustryId);
     const [location, setLocation] = useState("");
@@ -76,14 +65,7 @@ const SearchResult = () => {
             setLoading(false);
         }
     };
-
-    const getCompanyImage = (company) => {
-        if (!company) return "";
-        if (Array.isArray(company.images)) return company.images[0]?.image || "";
-        if (Array.isArray(company.image)) return company.image[0]?.image || "";
-        return company.image || "";
-    };
-
+    
     const renderJob = ({ item, index }) => (
         <TouchableOpacity
             key={index}
@@ -93,7 +75,7 @@ const SearchResult = () => {
             <View style={MyStyles.listItem}>
                 <Image
                     style={MyStyles.avatar}
-                    source={{ uri: getCompanyImage(item.company) }}
+                    source={{ uri: getCompanyLogo(item.company) }}
                 />
                 <View style={{ flex: 1, justifyContent: "center", paddingRight: 12 }}>
                     <Text style={MyStyles.titleText}>{item.title}</Text>
@@ -123,10 +105,6 @@ const SearchResult = () => {
 
     return (
         <View style={MyStyles.container}>
-            {/* Thanh tìm kiếm cố định */}
-
-
-            {/* Danh sách và bộ lọc scroll được */}
             <FlatList
                 style={{ flex: 1 }}
                 data={jobs}
@@ -175,7 +153,6 @@ const SearchResult = () => {
                             outlineColor="#ffcccc"
                             activeOutlineColor="#ff8888"
                         />
-
                     </View>
                 }
                 ListFooterComponent={

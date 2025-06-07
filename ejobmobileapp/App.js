@@ -19,7 +19,10 @@ import ManageCompany from "./components/User/Employer/ManageCompany";
 import NotificationScreen from "./components/User/NotificationScreen";
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import ChatScreen from "./components/User/ChatScreen";
+import MessagesList from "./components/User/Employer/MessagesList";
 
+const RootStack = createNativeStackNavigator();
 
 const Stack = createNativeStackNavigator();
 const StackNavigator = () => {
@@ -138,6 +141,24 @@ const TabNavigator = () => {
             }}
           />
           <Tab.Screen
+            name="Quản lý tin nhắn"
+            component={MessagesList}
+            options={{
+              title: 'Quản lý tin nhắn',
+              tabBarIcon: ({ color, size }) => (
+                <Icon name="file-cog" size={size} color="#d40000" />
+              ),
+              headerBackground: () => (
+                <LinearGradient
+                  colors={['#ff5e5e', '#fffafc']}
+                  style={{ flex: 1 }}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
             name="Quản lý hồ sơ"
             component={ManageApplications}
             options={{
@@ -154,7 +175,7 @@ const TabNavigator = () => {
                 />
               ),
             }}
-            
+
           />
           <Tab.Screen
             name="Thông báo"
@@ -190,7 +211,7 @@ const TabNavigator = () => {
                   end={{ x: 0, y: 1 }}
                 />
               ),
-              
+
             }}
           />
         </>
@@ -264,7 +285,23 @@ const App = () => {
       <MyUserContext.Provider value={user}>
         <MyDispatchContext.Provider value={dispatch}>
           <NavigationContainer>
-            <TabNavigator />
+            <RootStack.Navigator screenOptions={{ headerShown: false }}>
+              <RootStack.Screen name="MainTabs" component={TabNavigator} />
+              <RootStack.Screen
+                name="ChatScreen"
+                component={ChatScreen}
+                options={{
+                  headerShown: true, title: 'Tin nhắn', headerBackground: () => (
+                    <LinearGradient
+                      colors={['#ff5e5e', '#fffafc']}
+                      style={{ flex: 1 }}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                    />
+                  ),
+                }}
+              />
+            </RootStack.Navigator>
           </NavigationContainer>
         </MyDispatchContext.Provider>
       </MyUserContext.Provider>

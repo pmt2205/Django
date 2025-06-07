@@ -2,7 +2,6 @@ import axios from "axios";
 
 const BASE_URL = 'https://tuongou.pythonanywhere.com/';
 
-
 export const endpoints = {
     'industries': '/industries/',
     'jobs': '/jobs/',
@@ -22,7 +21,9 @@ export const endpoints = {
     'follow': '/follows/',
     'unfollow': (id) => `/follows/${id}/`,
     "notifications": "/notifications/",
-    "reviews": "/reviews/", 
+    "reviews": "/reviews/",
+    "create-room": "/chatrooms/",
+    "messages": "/messages/",
 };
 
 export const authApis = (token) => {
@@ -33,6 +34,20 @@ export const authApis = (token) => {
         }
     });
 }
+
+export const getFullMediaUrl = (path) => {
+    return path.startsWith("http") ? path : `${BASE_URL}${path}`;
+};
+
+export const getCompanyLogo = (company) => {
+    return getFullMediaUrl(company.images[0].image);
+};
+
+export const getCompanyImages = (company) => {
+  return company.images.map(imgObj => 
+    imgObj.image.startsWith("http") ? imgObj.image : `${BASE_URL}${imgObj.image}`
+  );
+};
 
 export default axios.create({
     baseURL: BASE_URL

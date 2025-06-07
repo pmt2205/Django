@@ -8,21 +8,9 @@ import {
   Image,
 } from 'react-native';
 import { MyUserContext } from '../../../configs/MyContexts';
-import { endpoints, authApis } from '../../../configs/Apis';
+import { endpoints, authApis, getCompanyLogo } from '../../../configs/Apis';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MyStyles from '../../../styles/MyStyles';
-
-const getCompanyImage = (company) => {
-  if (!company) return '';
-  if (Array.isArray(company.images)) {
-    return company.images[0]?.image || '';
-  }
-  if (Array.isArray(company.image)) {
-    return company.image[0]?.image || '';
-  }
-  return company.image || '';
-};
-
 
 const ManageApplications = () => {
   const user = useContext(MyUserContext);
@@ -95,13 +83,9 @@ const ManageApplications = () => {
           <View key={app.id} style={MyStyles.listItemShadow}>
             <View style={MyStyles.listItem}>
               <Image
-                source={{ uri: getCompanyImage(app.job.company) || 'https://via.placeholder.com/100' }}
+                source={{ uri: getCompanyLogo(app.job.company) || 'https://via.placeholder.com/100' }}
                 style={MyStyles.avatar}
-                onError={() => console.warn("Ảnh không load được:", getCompanyImage(app.job.company))}
               />
-
-
-
               <View style={{ flex: 1, justifyContent: 'center', paddingRight: 10 }}>
                 <Text style={MyStyles.titleText}>{app.candidate.username}</Text>
                 <Text style={MyStyles.listDescription}>Email: {app.candidate.email}</Text>

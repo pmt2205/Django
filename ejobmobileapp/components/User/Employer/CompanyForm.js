@@ -10,6 +10,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Apis, { authApis, endpoints } from "../../../configs/Apis";
 import MyStyles from "../../../styles/MyStyles";
 
+import { Image } from "react-native";
+import * as ImagePicker from 'expo-image-picker'; // ✅ THAY vì react-native-image-picker
+
+
+
 const CompanyForm = ({ navigation }) => {
     const [company, setCompany] = useState({
         name: "",
@@ -20,7 +25,33 @@ const CompanyForm = ({ navigation }) => {
     });
     const [loading, setLoading] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
-    const [msg, setMsg] = useState(null); 
+    const [msg, setMsg] = useState(null);
+    const [images, setImages] = useState([]);
+
+
+    const pickImages = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (status !== 'granted') {
+            setMsg("Cần cấp quyền truy cập ảnh.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            selectionLimit: 5, // hỗ trợ tối đa 5 ảnh nếu thiết bị cho phép
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            // Trường hợp multiple
+            const selected = result.assets || [];
+            setImages(selected);
+        }
+    };
+
+
 
     const getToken = async () => {
         return await AsyncStorage.getItem("token");
@@ -65,6 +96,11 @@ const CompanyForm = ({ navigation }) => {
             return;
         }
 
+        if (!isEdit && images.length < 3) {
+            setMsg("Vui lòng chọn ít nhất 3 hình ảnh.");
+            return;
+        }
+
         setLoading(true);
         setMsg(null);
 
@@ -76,11 +112,34 @@ const CompanyForm = ({ navigation }) => {
                 return;
             }
 
+            const formData = new FormData();
+            Object.entries(company).forEach(([key, value]) =>
+                formData.append(key, value)
+            );
+
+            if (!isEdit) {
+                images.forEach((img, idx) => {
+                    formData.append("images", {
+                        uri: img.uri,
+                        type: img.mimeType || "image/jpeg",
+                        name: img.fileName || `image_${idx}.jpg`,
+                    });
+                });
+
+            }
+
+            const config = {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "multipart/form-data",
+                },
+            };
+
             if (isEdit) {
                 await authApis(token).patch(endpoints["update-company-info"], company);
                 setMsg("Cập nhật công ty thành công.");
             } else {
-                await authApis(token).post(endpoints["register-company"], company);
+                await Apis.post(endpoints["register-company"], formData, config);
                 setMsg("Tạo công ty mới thành công.");
             }
 
@@ -91,6 +150,7 @@ const CompanyForm = ({ navigation }) => {
             setLoading(false);
         }
     };
+
 
     if (loading) {
         return <ActivityIndicator size="large" color="#fa6666" style={{ marginTop: 30 }} />;
@@ -145,6 +205,30 @@ const CompanyForm = ({ navigation }) => {
                 multiline
                 numberOfLines={5}
             />
+
+            <TouchableOpacity
+                onPress={pickImages}
+                style={{
+                    backgroundColor: "#ccc",
+                    paddingVertical: 10,
+                    marginBottom: 12,
+                    borderRadius: 10,
+                    alignItems: "center"
+                }}
+            >
+                <Text>Chọn ảnh công ty</Text>
+            </TouchableOpacity>
+
+            <ScrollView horizontal>
+                {images.map((img, idx) => (
+                    <Image
+                        key={idx}
+                        source={{ uri: img.uri }}
+                        style={{ width: 100, height: 100, marginRight: 8, borderRadius: 8 }}
+                    />
+                ))}
+            </ScrollView>
+
 
             {/* ✅ Hiển thị thông báo */}
             {msg && (

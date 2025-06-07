@@ -64,7 +64,14 @@ const ApplyJob = ({ route, navigation }) => {
             setTimeout(() => navigation.goBack(), 1500);
 
         } catch (error) {
-            console.error(error);
+            if (error.response) {
+                console.error("Server responded with:", error.response.data);
+            } else if (error.request) {
+                console.error("No response received. Request was:", error.request);
+            } else {
+                console.error("Error setting up request:", error.message);
+            }
+
             setMsg('Ứng tuyển thất bại. Vui lòng thử lại.');
         } finally {
             setUploading(false);

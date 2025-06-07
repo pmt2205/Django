@@ -1,16 +1,8 @@
-import {
-    StatusBar,
-    ActivityIndicator,
-    FlatList,
-    Image,
-    Text,
-    TouchableOpacity,
-    View
-} from "react-native";
+import { StatusBar, ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import MyStyles from "../../styles/MyStyles";
 import { useEffect, useState } from "react";
 import { Chip } from "react-native-paper";
-import Apis, { endpoints } from "../../configs/Apis";
+import Apis, { endpoints, getCompanyLogo } from "../../configs/Apis";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import HomeHeader from "../Home/HomeHeader";
@@ -66,19 +58,7 @@ const Home = () => {
         }
     };
 
-    const getCompanyImage = (company) => {
-        if (!company) return '';
-        if (Array.isArray(company.images)) {
-            return company.images[0]?.image || '';
-        }
-        if (Array.isArray(company.image)) {
-            return company.image[0]?.image || '';
-        }
-        return company.image || '';
-    };
-
     const handleSubmitSearch = () => {
-        // Chuyển sang màn SearchResult với từ khóa q, industryId hiện tại
         nav.navigate("SearchResult", { q, initialIndustryId: industryId });
     };
 
@@ -141,7 +121,7 @@ const Home = () => {
                             >
                                 <Image
                                     style={MyStyles.avatar}
-                                    source={{ uri: getCompanyImage(item.company) }}
+                                    source={{ uri: getCompanyLogo(item.company) }}
                                 />
 
                                 <View style={{ flex: 1, justifyContent: 'center', paddingRight: 12 }}>
@@ -187,7 +167,7 @@ const Home = () => {
                     keyExtractor={(item) => item.id.toString()}
                     contentContainerStyle={MyStyles.companyListContainer}
                     renderItem={({ item }) => {
-                        const imageUri = getCompanyImage(item);
+                        const imageUri = getCompanyLogo(item);
                         return (
                             <TouchableOpacity
                                 style={MyStyles.companyItem}
@@ -204,7 +184,6 @@ const Home = () => {
                             </TouchableOpacity>
                         );
                     }}
-
                 />
             </View>
         </>

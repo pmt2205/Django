@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import MyStyles from "../../../styles/MyStyles";
 import CompanyForm from "./CompanyForm";
 import CreateJob from "./CreateJob";
-
+import MessagesList from "./MessagesList"; // 👈 Thêm dòng này
 
 const ManageCompany = () => {
   const [activeTab, setActiveTab] = useState("Công ty");
 
   const renderTabMenu = () => {
-    const tabs = ["Công ty", "Tạo việc làm"];
+    const tabs = ["Công ty", "Tạo việc làm", "Tin nhắn"]; // 👈 Thêm "Tin nhắn"
     return (
       <View style={{ flexDirection: "row", marginBottom: 12 }}>
         {tabs.map((tab) => (
@@ -45,6 +45,8 @@ const ManageCompany = () => {
         return <CompanyForm />;
       case "Tạo việc làm":
         return <CreateJob />;
+      case "Tin nhắn":
+        return <MessagesList />; // 👈 Gọi component tin nhắn
       default:
         return null;
     }
@@ -55,8 +57,6 @@ const ManageCompany = () => {
       {renderTabMenu()}
       {renderContent()}
     </View>
-
-    
   );
 };
 

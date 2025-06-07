@@ -97,7 +97,7 @@ const Register = () => {
           formData.append('avatar', {
             uri: user.avatar.uri,
             name: user.avatar.fileName || `avatar_${Date.now()}.jpg`,
-            type: user.avatar.type || 'image/jpeg'
+            type: user.avatar.mimeType || 'image/jpeg'  // <-- đổi từ user.avatar.type sang user.avatar.mimeType
           });
         } else if (typeof user[key] === 'string' || typeof user[key] === 'number') {
           formData.append(key, user[key]);
@@ -109,7 +109,7 @@ const Register = () => {
         timeout: 10000,
       });
 
-      nav.navigate('login');
+      nav.navigate('Đăng nhập');
 
     } catch (error) {
       console.log("Register error:", error);

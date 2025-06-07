@@ -7,6 +7,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from jobs import serializers, paginators
 from .perms import IsEmployer, IsCandidate, has_been_accepted
+from django.core.mail import send_mail
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -97,9 +101,9 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
         if salary_to:
             queryset = queryset.filter(salary_to__lte=salary_to)
 
-        job_type = self.request.query_params.get('job_type')
-        if job_type:
-            queryset = queryset.filter(job_type=job_type)
+        time_type = self.request.query_params.get('time_type')
+        if time_type:
+            queryset = queryset.filter(time_type=time_type)
 
         location = self.request.query_params.get('location')
         if location:
@@ -114,30 +118,63 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
     @action(detail=False, methods=['post'], permission_classes=[IsEmployer])
     @transaction.atomic
     def create_job(self, request):
-        if request.user.company.status != 'approved':
+        company = request.user.company
+
+        if company.status != 'approved':
             return Response(
                 {"error": "You can only create a job if your company is approved."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         serializer = serializers.JobCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            job = serializer.save(company=request.user.company)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
 
-            # Tạo thông báo cho các candidate đã theo dõi công ty này
-            followers = Follow.objects.filter(company=request.user.company, active=True)
-            notifications = []
-            for follow in followers:
-                message = f"Công ty {request.user.company.name} vừa đăng tuyển vị trí '{job.title}'. Hãy ứng tuyển ngay!"
-                notifications.append(Notification(
-                    user=follow.candidate,
-                    message=message,
-                    is_read=False,
-                ))
-            Notification.objects.bulk_create(notifications)
+        # ✅ Lưu job mới
+        job = serializer.save(company=company)
 
-            return Response(serializers.JobDetailSerializer(job, context={'request': request}).data, status=201)
-        return Response(serializer.errors, status=400)
+        # ✅ Lấy danh sách ứng viên đang theo dõi công ty
+        followers = Follow.objects.filter(company=company, active=True).select_related('candidate')
+
+        # ✅ Tạo danh sách thông báo
+        notifications = []
+        for follow in followers:
+            message = f"Công ty {company.name} vừa đăng tuyển vị trí '{job.title}'. Hãy ứng tuyển ngay!"
+            notifications.append(Notification(
+                user=follow.candidate,
+                message=message,
+                is_read=False
+            ))
+        Notification.objects.bulk_create(notifications)
+
+        # ✅ Gửi email cho ứng viên
+        for follow in followers:
+            candidate = follow.candidate
+            if candidate.email:
+                subject = f"[{company.name}] Tuyển dụng vị trí: {job.title}"
+                message = (
+                    f"Xin chào {candidate.get_full_name() or candidate.username},\n\n"
+                    f"Công ty {company.name} vừa đăng tuyển vị trí '{job.title}'.\n"
+                    f"Hãy đăng nhập để xem chi tiết và ứng tuyển ngay!\n\n"
+                    f"Xem chi tiết tại: {settings.FRONTEND_URL}/jobs/{job.id}/\n\n"
+                    f"Trân trọng,\nĐội ngũ {company.name}"
+                )
+                try:
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [candidate.email],
+                        fail_silently=False  # để hiện lỗi
+                    )
+                    print("✅ Gửi email thành công đến:", candidate.email)
+                except Exception as e:
+                    print("❌ Gửi email thất bại:", str(e))
+
+        return Response(
+            serializers.JobDetailSerializer(job, context={'request': request}).data,
+            status=201
+        )
 
     @action(detail=True, methods=['get'], url_path='applications',
             permission_classes=[permissions.IsAuthenticated, IsEmployer])
@@ -158,32 +195,23 @@ class ApplicationViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = serializers.ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # ✅ GET /applications/ (danh sách ứng tuyển của user)
     def list(self, request):
-        if hasattr(request.user, 'candidateprofile'):
-            apps = Application.objects.filter(candidate=request.user, active=True)
-        elif hasattr(request.user, 'company'):
+        if hasattr(request.user, 'company'):
             apps = Application.objects.filter(job__company=request.user.company, active=True)
         else:
-            apps = Application.objects.none()
+            apps = Application.objects.filter(candidate=request.user, active=True)
         serializer = self.get_serializer(apps, many=True)
         return Response(serializer.data)
 
-    # ✅ GET /applications/<id>/
     def retrieve(self, request, pk=None):
         try:
             app = Application.objects.get(pk=pk, active=True)
         except Application.DoesNotExist:
             return Response({'error': 'Không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
-
         return Response(self.serializer_class(app).data)
 
-    # ✅ POST /applications/apply/
     @action(methods=['post'], detail=False, permission_classes=[IsCandidate])
     def apply(self, request):
-        if not hasattr(request.user, 'candidateprofile'):
-            return Response({'error': 'Bạn cần tạo hồ sơ ứng viên trước'}, status=400)
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -202,25 +230,37 @@ class ApplicationViewSet(viewsets.ViewSet, generics.ListAPIView):
         )
         return Response(self.get_serializer(application).data, status=201)
 
-    # ✅ PATCH /applications/<id>/
     def partial_update(self, request, pk=None):
         try:
             app = Application.objects.select_related('job__company').get(pk=pk, active=True)
         except Application.DoesNotExist:
             return Response({'error': 'Không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Chỉ employer của công ty đó mới được sửa
-        if not hasattr(request.user, 'company') or app.job.company != request.user.company:
+        # Nếu là công ty thì chỉ được sửa status
+        if hasattr(request.user, 'company'):
+            if app.job.company != request.user.company:
+                return Response({'error': 'Không có quyền'}, status=status.HTTP_403_FORBIDDEN)
+
+            new_status = request.data.get('status')
+            valid_statuses = [c[0] for c in Application.STATUS_CHOICES]
+            if new_status not in valid_statuses:
+                return Response({'error': 'Trạng thái không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
+
+            app.status = new_status
+            app.save()
+            return Response(self.serializer_class(app).data)
+
+        # Nếu là ứng viên và là người sở hữu đơn
+        elif app.candidate == request.user:
+            # Cho phép cập nhật cv_custom và cover_letter
+            serializer = self.get_serializer(app, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
+        else:
             return Response({'error': 'Không có quyền'}, status=status.HTTP_403_FORBIDDEN)
 
-        new_status = request.data.get('status')
-        valid_statuses = [c[0] for c in Application.STATUS_CHOICES]
-        if new_status not in valid_statuses:
-            return Response({'error': 'Trạng thái không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
-
-        app.status = new_status
-        app.save()
-        return Response(self.serializer_class(app).data)
 
 class CandidateProfileViewSet(viewsets.GenericViewSet):
     queryset = CandidateProfile.objects.filter(active=True)
@@ -396,52 +436,49 @@ class ChatRoomViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPI
         return ChatRoom.objects.none()
 
     def create(self, request, *args, **kwargs):
-        user = request.user
-        data = request.data
-
-        job_id = data.get('job_id')
-        if not job_id:
-            return Response({'job_id': ['This field is required.']}, status=400)
-
         try:
+            user = request.user
+            data = request.data
+            print(f"[CREATE ROOM] user={user}, data={data}")
+
+            job_id = data.get('job_id')
+            if not job_id:
+                return Response({'job_id': ['This field is required.']}, status=400)
+
             job = Job.objects.get(pk=job_id)
-        except Job.DoesNotExist:
-            return Response({'job_id': ['Job not found.']}, status=404)
 
-        # Tự động xác định employer và candidate dựa trên user đăng nhập
-        if user.role == 'employer':
-            employer = user
-            candidate_id = data.get('candidate_id')
-            if not candidate_id:
-                return Response({'candidate_id': ['This field is required.']}, status=400)
-            try:
+            if user.role == 'employer':
+                employer = user
+                candidate_id = data.get('candidate_id')
+                if not candidate_id:
+                    return Response({'candidate_id': ['This field is required.']}, status=400)
                 candidate = User.objects.get(pk=candidate_id, role='candidate')
-            except User.DoesNotExist:
-                return Response({'candidate_id': ['Candidate not found.']}, status=404)
-        elif user.role == 'candidate':
-            candidate = user
-            employer = job.company.user  # lấy từ job
-        else:
-            return Response({'detail': 'Invalid role.'}, status=403)
+            elif user.role == 'candidate':
+                candidate = user
+                employer = job.company.user
+            else:
+                return Response({'detail': 'Invalid role.'}, status=403)
 
-        # Tạo room_id duy nhất nếu chưa có
-        room_id = str(uuid.uuid4())
+            room_id = str(uuid.uuid4())
 
-        # Kiểm tra trùng
-        chatroom, created = ChatRoom.objects.get_or_create(
-            employer=employer,
-            candidate=candidate,
-            job=job,
-            defaults={'room_id': room_id}
-        )
+            chatroom, created = ChatRoom.objects.get_or_create(
+                employer=employer,
+                candidate=candidate,
+                job=job,
+                defaults={'room_id': room_id}
+            )
 
-        serializer = self.get_serializer(chatroom)
-        return Response(serializer.data, status=201 if created else 200)
+            serializer = self.get_serializer(chatroom)
+            return Response(serializer.data, status=201 if created else 200)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response({"error": str(e)}, status=500)
 
 
 class MessageViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIView):
-    serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated]
+    serializer_class = serializers.MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         room_id = self.request.query_params.get('room_id')
@@ -451,3 +488,4 @@ class MessageViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
+

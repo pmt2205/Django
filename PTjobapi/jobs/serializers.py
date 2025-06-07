@@ -6,7 +6,6 @@ from .models import (
     ChatRoom, Message, CompanyImage
 )
 
-
 class IndustrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Industry
@@ -54,7 +53,7 @@ class JobSerializer(ItemSerializer):
         model = Job
         fields = [
             'id', 'title', 'company', 'industry',
-            'job_type', 'salary_type', 'salary_from',
+            'time_type', 'salary_type', 'salary_from',
             'salary_to', 'location', 'created_date'
         ]
 
@@ -79,7 +78,7 @@ class JobCreateSerializer(serializers.ModelSerializer):
         model = Job
         fields = [
             'title', 'description', 'requirements',
-            'salary_from', 'salary_to', 'job_type',
+            'salary_from', 'salary_to', 'time_type',
             'location', 'deadline', 'industry',
             'is_featured', 'latitude', 'longitude'
         ]
@@ -138,7 +137,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
         model = Application
         fields = [
             'id', 'job', 'candidate', 'status',
-            'cover_letter', 'applied_date', 'status_display'
+            'cover_letter', 'applied_date', 'status_display', 'cv_custom'
         ]
         extra_kwargs = {
             'status': {'read_only': True}
@@ -159,11 +158,8 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['id', 'candidate', 'company']
         extra_kwargs = {
-            'candidate': {'read_only': True}  # ✅ Không cần write_only, chỉ read_only là đủ
+            'candidate': {'read_only': True}
         }
-
-
-
 
 # 10. ReviewSerializer (đánh giá)
 class ReviewSerializer(serializers.ModelSerializer):

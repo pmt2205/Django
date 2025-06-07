@@ -8,21 +8,10 @@ import {
   Image,
 } from 'react-native';
 import { MyUserContext } from '../../../configs/MyContexts';
-import { endpoints, authApis } from '../../../configs/Apis';
+import { endpoints, authApis, getCompanyLogo } from '../../../configs/Apis';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useIsFocused } from '@react-navigation/native';
 import MyStyles from '../../../styles/MyStyles';
-
-const getCompanyImage = (company) => {
-        if (!company) return '';
-        if (Array.isArray(company.images)) {
-            return company.images[0]?.image || '';
-        }
-        if (Array.isArray(company.image)) {
-            return company.image[0]?.image || '';
-        }
-        return company.image || '';
-    };
 
 const MyApplications = ({ navigation }) => {
   const user = useContext(MyUserContext);
@@ -76,7 +65,7 @@ const MyApplications = ({ navigation }) => {
               style={MyStyles.listItem}
               activeOpacity={0.8}
             >
-              <Image source={{ uri: getCompanyImage(app.job.company) }} style={MyStyles.avatar} />
+              <Image source={{ uri: getCompanyLogo(app.job.company) }} style={MyStyles.avatar} />
 
               <View style={{ flex: 1, justifyContent: 'center', paddingRight: 10 }}>
                 <Text style={MyStyles.titleText}>{app.job.title}</Text>

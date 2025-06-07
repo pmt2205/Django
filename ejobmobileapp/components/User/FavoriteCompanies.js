@@ -2,18 +2,9 @@ import { useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from "react-native";
 import { Text, Card } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import Apis, { authApis, endpoints } from "../../configs/Apis";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { authApis, endpoints, getCompanyLogo } from "../../configs/Apis";
 import MyStyles from "../../styles/MyStyles";
 import { useNavigation } from "@react-navigation/native";
-
-
-const getCompanyImage = (company) => {
-    if (!company) return '';
-    if (Array.isArray(company.images)) return company.images[0]?.image || '';
-    if (Array.isArray(company.image)) return company.image[0]?.image || '';
-    return company.image || '';
-};
 
 const FavouriteCompany = () => {
     const navigation = useNavigation();
@@ -60,7 +51,7 @@ const FavouriteCompany = () => {
                     <Card key={followId} style={{ marginBottom: 20, padding: 16 }}>
                         <View style={{ flexDirection: "row" }}>
                             <Image
-                                source={{ uri: getCompanyImage(company) }}
+                                source={{ uri: getCompanyLogo(company) }}
                                 style={{
                                     width: 80,
                                     height: 80,
@@ -80,7 +71,7 @@ const FavouriteCompany = () => {
 
                         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 12 }}>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate("home", {
+                                onPress={() => navigation.navigate("Trang chủ", {
                                     screen: "companyDetail",
                                     params: { companyId: company.id },
                                 })}

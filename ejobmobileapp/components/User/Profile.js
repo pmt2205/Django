@@ -1,12 +1,10 @@
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button } from "react-native-paper";
-
 import { MyUserContext, MyDispatchContext } from "../../configs/MyContexts";
-import MyStyles from "../../styles/MyStyles";
-
+import { getFullMediaUrl } from "../../configs/Apis";
 import ChangePassword from "./ChangePassword";
 import FavoriteCompanies from "./FavoriteCompanies";
 import EditProfile from "./EditProfile";
@@ -21,7 +19,7 @@ const Profile = () => {
   // Tạo mảng tab tùy user.role
   const tabs = ["Chỉnh sửa thông tin", "Đổi mật khẩu"];
   if (user?.role === "candidate") {
-    tabs.push("Công ty yêu thích");
+    tabs.push("Công ty theo dõi");
   }
 
   const logout = async () => {
@@ -31,7 +29,6 @@ const Profile = () => {
   };
 
   if (user === null) {
-    // User chưa load hoặc chưa đăng nhập
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#fa6666" />
@@ -41,11 +38,10 @@ const Profile = () => {
   }
 
   const renderUserHeader = () => {
-    const avatarUri = user?.avatar ? user.avatar : "https://via.placeholder.com/150";
     return (
       <View style={{ alignItems: "center", marginBottom: 24 }}>
         <Image
-          source={{ uri: avatarUri }}
+          source={{ uri: getFullMediaUrl(user?.avatar) }}
           style={{
             width: 120,
             height: 120,
@@ -107,7 +103,7 @@ const Profile = () => {
         return <EditProfile />;
       case "Đổi mật khẩu":
         return <ChangePassword />;
-      case "Công ty yêu thích":
+      case "Công ty theo dõi":
         return <FavoriteCompanies />;
       default:
         return (
