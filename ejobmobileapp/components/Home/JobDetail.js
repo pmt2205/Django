@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { formatToMillions } from '../../utils/format'
 import { format } from 'date-fns';
 import { MyUserContext } from "../../configs/MyContexts";
+import MapView, { Marker } from 'react-native-maps';
+
 
 const JobDetail = ({ route, navigation }) => {
     const jobId = route.params?.jobId;
@@ -98,13 +100,34 @@ const JobDetail = ({ route, navigation }) => {
                                     {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
                                 </Text>
                             </View>
-                            <View style={{ marginBottom: 6 }}>
+
+                            {job.latitude && job.longitude && (
+                                <View style={{ height: 200, marginTop: 16, borderRadius: 12, overflow: 'hidden' }}>
+                                    <MapView
+                                        style={{ flex: 1 }}
+                                        initialRegion={{
+                                            latitude: job.latitude,
+                                            longitude: job.longitude,
+                                            latitudeDelta: 0.01,
+                                            longitudeDelta: 0.01,
+                                        }}
+                                    >
+                                        <Marker
+                                            coordinate={{ latitude: job.latitude, longitude: job.longitude }}
+                                            title={job.company.name}
+                                            description={job.location}
+                                        />
+                                    </MapView>
+                                </View>
+                            )}
+
+                            {/* <View style={{ marginBottom: 6 }}>
                                 <Text style={{ fontWeight: "bold", fontSize: 18 }}>Website công ty</Text>
                                 <Text
                                     style={{ marginLeft: 20, marginTop: 4, color: 'blue' }}
                                     onPress={() => Linking.openURL(job.company.website)}>{job.company.website}
                                 </Text>
-                            </View>
+                            </View> */}
                             <View style={{ marginBottom: 6 }}>
                                 <Text style={{ fontWeight: "bold", fontSize: 18 }}>Giới thiệu công ty</Text>
                                 <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.company.description}</Text>

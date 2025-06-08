@@ -9,7 +9,7 @@ class User(AbstractUser):
         ('candidate', 'Ứng viên'),
     ]
 
-    avatar = CloudinaryField(null=False)
+    avatar = models.ImageField(upload_to='avts/')
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     phone = models.CharField(max_length=15, null=True)
     address = models.TextField(null=True)
@@ -40,7 +40,6 @@ class Company(BaseModel):
     tax_code = models.CharField(max_length=20, unique=True)
     description = models.TextField()
     address = models.TextField()
-    # website = models.URLField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     verification_documents = CloudinaryField(null=True, blank=True)
 
@@ -60,12 +59,6 @@ class Industry(BaseModel):
 
 
 class Job(BaseModel):
-    JOB_TYPE_CHOICES = [
-        ('part_time', 'Bán thời gian'),
-        ('full_time', 'Toàn thời gian'),
-        ('freelance', 'Freelance'),
-    ]
-
     JOB_TIME_CHOICES = [
         ('morning', '6 - 12h'),
         ('afternoon', '12 - 18h'),
@@ -73,21 +66,13 @@ class Job(BaseModel):
         ('late', '0h - 6h'),
     ]
 
-    SALARY_TYPE_CHOICES = [
-        ('hourly', 'Theo giờ'),
-        ('daily', 'Theo ngày'),
-        ('monthly', 'Theo tháng'),
-        ('project', 'Theo dự án'),
-    ]
-
     title = models.CharField(max_length=255)
     description = models.TextField()
     requirements = models.TextField()
+    welfare = models.TextField()
     industry = models.ForeignKey(Industry, on_delete=models.PROTECT)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    # job_type = models.CharField(max_length=10, choices=JOB_TYPE_CHOICES)
     time_type = models.CharField(max_length=10, choices=JOB_TIME_CHOICES)
-    salary_type = models.CharField(max_length=10, choices=SALARY_TYPE_CHOICES)
     salary_from = models.DecimalField(max_digits=12, decimal_places=2)
     salary_to = models.DecimalField(max_digits=12, decimal_places=2)
     location = models.CharField(max_length=255)
@@ -156,6 +141,17 @@ class Review(BaseModel):
     content = models.TextField()
     rating = models.IntegerField(null=True, blank=True)  # Từ 1 đến 5 sao, nếu là phản hồi thì có thể không cần rating
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
+    def __str__(self):
+        candidate_name = self.candidate.username if self.candidate else "Ẩn danh"
+        company_name = self.company.name if self.company else "Không rõ công ty"
+        prefix = "Phản hồi" if self.parent else "Đánh giá"
+
+        content = self.content or ""  # Nếu content là None, thay bằng chuỗi rỗng
+        short_content = (content[:50] + '...') if len(content) > 50 else content
+
+        return f"{prefix} của {candidate_name} tại {company_name}: \"{short_content}\""
+
+
 
 
 class Notification(BaseModel):

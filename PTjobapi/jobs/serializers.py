@@ -6,6 +6,7 @@ from .models import (
     ChatRoom, Message, CompanyImage
 )
 
+
 class IndustrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Industry
@@ -28,7 +29,9 @@ class CompanySerializer(ItemSerializer):
 
     class Meta:
         model = Company
-        fields = ['id', 'name', 'tax_code', 'address', 'images', 'description', 'status']
+        fields = ['id', 'name', 'tax_code', 'address', 'images', 'description', 'status', 'user']
+        read_only_fields = ['user']
+
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -53,7 +56,7 @@ class JobSerializer(ItemSerializer):
         model = Job
         fields = [
             'id', 'title', 'company', 'industry',
-            'time_type', 'salary_type', 'salary_from',
+            'time_type', 'salary_from',
             'salary_to', 'location', 'created_date'
         ]
 
@@ -69,7 +72,7 @@ class JobDetailSerializer(JobSerializer):
     class Meta:
         model = Job
         fields = JobSerializer.Meta.fields + [
-            'description', 'requirements', 'deadline',
+            'description', 'requirements', 'deadline', 'welfare'
             'latitude', 'longitude', 'is_featured', 'liked'
         ]
 
@@ -77,7 +80,7 @@ class JobCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Job
         fields = [
-            'title', 'description', 'requirements',
+            'title', 'description', 'requirements', 'welfare',
             'salary_from', 'salary_to', 'time_type',
             'location', 'deadline', 'industry',
             'is_featured', 'latitude', 'longitude'
@@ -95,11 +98,14 @@ class UserSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        data = validated_data.copy()
-        u = User(**data)
-        u.set_password(u.password)
-        u.save()
-        return u
+        try:
+            data = validated_data.copy()
+            u = User(**data)
+            u.set_password(u.password)
+            u.save()
+            return u
+        except Exception as e:
+            raise serializers.ValidationError({"detail": str(e)})
 
     class Meta:
         model = User
@@ -137,7 +143,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
         model = Application
         fields = [
             'id', 'job', 'candidate', 'status',
-            'cover_letter', 'applied_date', 'status_display', 'cv_custom'
+            'cover_letter', 'applied_date', 'status_display'
         ]
         extra_kwargs = {
             'status': {'read_only': True}
@@ -158,8 +164,11 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['id', 'candidate', 'company']
         extra_kwargs = {
-            'candidate': {'read_only': True}
+            'candidate': {'read_only': True}  # ✅ Không cần write_only, chỉ read_only là đủ
         }
+
+
+
 
 # 10. ReviewSerializer (đánh giá)
 class ReviewSerializer(serializers.ModelSerializer):
@@ -178,6 +187,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'user', 'message', 'is_read', 'link', 'created_date']
+
 
 
 # 12. MessageSerializer

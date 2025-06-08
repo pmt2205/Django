@@ -1,5 +1,4 @@
 import uuid
-
 from django.db import transaction
 from rest_framework import viewsets, permissions, generics, parsers, decorators, status
 from .models import Industry, Company, Job, Application, Follow, Review, Notification, ChatRoom, Message, User, CandidateProfile
@@ -24,7 +23,7 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
         u = request.user
         if request.method == 'PATCH':
             for k, v in request.data.items():
-                if k in ['first_name', 'last_name', 'phone', 'address']:
+                if k in ['first_name', 'last_name', 'address']:
                     setattr(u, k, v)
                 elif k == 'password':
                     u.set_password(v)
@@ -39,6 +38,14 @@ class CompanyViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAP
     queryset = Company.objects.filter(active=True)
     serializer_class = serializers.CompanySerializer
     pagination_class = paginators.ItemPaginator
+
+    @action(methods=['get'], detail=False, permission_classes=[IsEmployer])
+    def my_company(self, request):
+        user = request.user
+        if hasattr(user, 'company') and user.company:
+            company = user.company
+            return Response(self.serializer_class(company, context={'request': request}).data)
+        return Response({'detail': 'Chưa có công ty nào.'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(methods=['post'], detail=False, permission_classes=[IsEmployer])
     def register(self, request):
@@ -261,7 +268,6 @@ class ApplicationViewSet(viewsets.ViewSet, generics.ListAPIView):
         else:
             return Response({'error': 'Không có quyền'}, status=status.HTTP_403_FORBIDDEN)
 
-
 class CandidateProfileViewSet(viewsets.GenericViewSet):
     queryset = CandidateProfile.objects.filter(active=True)
     serializer_class = serializers.CandidateProfileSerializer
@@ -360,7 +366,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Review.objects.filter(parent__isnull=True).order_by('-created_date')
+        company_id = self.request.query_params.get("company_id")
+        qs = Review.objects.filter(parent__isnull=True).order_by('-created_date')
+        if company_id:
+            qs = qs.filter(company__id=company_id)
+        return qs
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -488,4 +498,3 @@ class MessageViewSet(viewsets.ViewSet, generics.ListAPIView, generics.CreateAPIV
 
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
-
