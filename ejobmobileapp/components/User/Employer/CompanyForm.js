@@ -11,7 +11,7 @@ import Apis, { authApis, endpoints } from "../../../configs/Apis";
 import MyStyles from "../../../styles/MyStyles";
 
 import { Image } from "react-native";
-import * as ImagePicker from 'expo-image-picker'; // ✅ THAY vì react-native-image-picker
+import * as ImagePicker from 'expo-image-picker';
 
 
 

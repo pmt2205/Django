@@ -72,7 +72,7 @@ class JobDetailSerializer(JobSerializer):
     class Meta:
         model = Job
         fields = JobSerializer.Meta.fields + [
-            'description', 'requirements', 'deadline', 'welfare'
+            'description', 'requirements', 'deadline', 'welfare',
             'latitude', 'longitude', 'is_featured', 'liked'
         ]
 

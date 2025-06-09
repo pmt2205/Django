@@ -56,7 +56,7 @@ const JobDetail = ({ route, navigation }) => {
                                         </View>
                                         <Text style={MyStyles.infoText} numberOfLines={2} ellipsizeMode="tail">
                                             <Text style={MyStyles.infoText}>
-                                                {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
+                                                {formatToMillions(job.salary_from, job.salary_to)}
                                             </Text>
                                         </Text>
                                     </View>
@@ -77,7 +77,7 @@ const JobDetail = ({ route, navigation }) => {
                                 <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.description}</Text>
                             </View>
                             <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Mô tả công việc</Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Địa điểm làm việc</Text>
                                 <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.location}</Text>
                             </View>
                             <View style={{ marginBottom: 6 }}>
@@ -85,19 +85,13 @@ const JobDetail = ({ route, navigation }) => {
                                 <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.requirements}</Text>
                             </View>
                             <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Hình thức</Text>
-                                <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.job_type}</Text>
+                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Quyền lợi</Text>
+                                <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.welfare}</Text>
                             </View>
                             <View style={{ marginBottom: 6 }}>
                                 <Text style={{ fontWeight: "bold", fontSize: 18 }}>Thu nhập</Text>
                                 <Text style={{ marginLeft: 20, marginTop: 4 }}>
-                                    {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
-                                </Text>
-                            </View>
-                            <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Quyền lợi</Text>
-                                <Text style={{ marginLeft: 20, marginTop: 4 }}>
-                                    {formatToMillions(job.salary_from, job.salary_to, job.salary_type)}
+                                    {formatToMillions(job.salary_from, job.salary_to)}
                                 </Text>
                             </View>
 
@@ -120,18 +114,6 @@ const JobDetail = ({ route, navigation }) => {
                                     </MapView>
                                 </View>
                             )}
-
-                            {/* <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Website công ty</Text>
-                                <Text
-                                    style={{ marginLeft: 20, marginTop: 4, color: 'blue' }}
-                                    onPress={() => Linking.openURL(job.company.website)}>{job.company.website}
-                                </Text>
-                            </View> */}
-                            <View style={{ marginBottom: 6 }}>
-                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>Giới thiệu công ty</Text>
-                                <Text style={{ marginLeft: 20, marginTop: 4 }}>{job.company.description}</Text>
-                            </View>
                             <Text style={{ fontStyle: 'italic', color: '#888', marginTop: 12 }}>
                                 Ngày đăng: {format(new Date(job.created_date), 'dd/MM/yyyy')}
                             </Text>

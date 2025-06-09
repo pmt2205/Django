@@ -6,40 +6,46 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import MyStyles from "../../../styles/MyStyles";
+import { set } from "date-fns";
+import DropDownPicker from "react-native-dropdown-picker";
 
-const JOB_TYPE_OPTIONS = [
-  { label: "Bán thời gian", value: "part_time" },
-  { label: "Toàn thời gian", value: "full_time" },
-  { label: "Freelance", value: "freelance" },
-];
 
-const SALARY_TYPE_OPTIONS = [
-  { label: "Theo giờ", value: "hourly" },
-  { label: "Theo ngày", value: "daily" },
-  { label: "Theo tháng", value: "monthly" },
-  { label: "Theo dự án", value: "project" },
-];
+JOB_TIME_CHOICES = [
+  ('morning', '6 - 12h'),
+  ('afternoon', '12 - 18h'),
+  ('evening', '18 - 0h'),
+  ('late', '0h - 6h'),
+]
 
 const CreateJob = () => {
+  const [openTimeType, setOpenTimeType] = useState(false);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
+  const [welfare, setWelfare] = useState("");
   const [industry, setIndustry] = useState(null);
   const [industries, setIndustries] = useState([]);
-  const [jobType, setJobType] = useState("");
-  const [salaryType, setSalaryType] = useState("");
-  const [salaryFrom, setSalaryFrom] = useState("");
+  const [timeType, setTimeType] = useState([]); // array cho multi-select
+  const [selectedTimes, setSelectedTimes] = useState([]);
+
+  const [timeTypeOptions, setTimeTypeOptions] = useState([
+    { label: '6 - 12h', value: 'morning' },
+    { label: '12 - 18h', value: 'afternoon' },
+    { label: '18 - 0h', value: 'evening' },
+    { label: '0h - 6h', value: 'late' },
+  ]); const [salaryFrom, setSalaryFrom] = useState("");
   const [salaryTo, setSalaryTo] = useState("");
   const [location, setLocation] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
   const [deadline, setDeadline] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [msg, setMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
 
-
   useEffect(() => {
-    // Fetch industries from API khi component mount
     const fetchIndustries = async () => {
       try {
         const res = await axios.get("https://tuongou.pythonanywhere.com/industries/");
@@ -57,11 +63,10 @@ const CreateJob = () => {
   };
 
   const submitJob = async () => {
-    if (!title || !description || !requirements || !industry || !jobType || !salaryType || !location) {
+    if (!title || !description || !requirements || !welfare || !industry || !timeType.length || !location || !latitude || !longitude) {
       setMsg("Vui lòng nhập đầy đủ các trường bắt buộc.");
       return;
     }
-
     setMsg(null);
     setLoading(true);
 
@@ -71,12 +76,14 @@ const CreateJob = () => {
         title,
         description,
         requirements,
+        welfare,
         industry,
-        job_type: jobType,
-        salary_type: salaryType,
+        time_type: timeType,    // gửi mảng timeType
         salary_from: salaryFrom ? Number(salaryFrom) : null,
         salary_to: salaryTo ? Number(salaryTo) : null,
         location,
+        latitude: Number(latitude),  // lưu ý convert sang số nếu cần
+        longitude: Number(longitude),
         deadline: deadline ? deadline.toISOString().split("T")[0] : null,
       };
 
@@ -92,12 +99,14 @@ const CreateJob = () => {
       setTitle("");
       setDescription("");
       setRequirements("");
+      setWelfare("");
       setIndustry(null);
-      setJobType("");
-      setSalaryType("");
+      setTimeType([]);  // reset mảng chọn
       setSalaryFrom("");
       setSalaryTo("");
       setLocation("");
+      setLatitude("");
+      setLongitude("");
       setDeadline(null);
 
     } catch (error) {
@@ -109,13 +118,13 @@ const CreateJob = () => {
   };
 
 
+
   return (
     <ScrollView contentContainerStyle={{ padding: 20 }}>
       <Text style={MyStyles.sectionTitle}>Đăng tin tuyển dụng</Text>
       {loading && (
         <ActivityIndicator size="large" color="#fa6666" style={{ marginVertical: 10 }} />
       )}
-
 
       <TextInput
         label="Tiêu đề"
@@ -151,6 +160,18 @@ const CreateJob = () => {
         numberOfLines={4}
       />
 
+      <TextInput
+        label="Quyền lợi"
+        mode="outlined"
+        value={welfare}
+        onChangeText={setWelfare}
+        style={MyStyles.formInput}
+        outlineColor="#ffcccc"
+        activeOutlineColor="#ff8888"
+        multiline
+        numberOfLines={4}
+      />
+
       <View style={{
         borderWidth: 1,
         borderColor: '#ffcccc',
@@ -172,47 +193,32 @@ const CreateJob = () => {
         </Picker>
       </View>
 
-      <View style={{
-        borderWidth: 1,
-        borderColor: '#ffcccc',
-        borderRadius: 4,
-        marginBottom: 15,
-        justifyContent: 'center',
-        height: 56
-      }}>
-        <Picker
-          selectedValue={jobType}
-          onValueChange={(setJobType)}
-          prompt="Loại hình công việc"
-          dropdownIconColor="#ff8888"
-        >
-          <Picker.Item label="Loại hình công việc" value={null} />
-          {JOB_TYPE_OPTIONS.map((opt) => (
-            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
-          ))}
-        </Picker>
+      <View style={{ zIndex: 1000, marginBottom: 15 }}>
+        <DropDownPicker
+          multiple={true}
+          open={openTimeType}
+          value={timeType}              // đây là mảng giá trị đã chọn
+          items={timeTypeOptions}
+          setOpen={setOpenTimeType}
+          setValue={setTimeType}        // cập nhật mảng giá trị đã chọn
+          setItems={setTimeTypeOptions}
+          placeholder="Chọn khung giờ làm việc"
+          min={0}
+          max={4}
+          listMode="MODAL"
+          mode="BADGE"
+          badgeColors="#fa6666"
+          badgeDotColors="#fff"
+          style={{
+            borderColor: '#ffcccc',
+          }}
+          dropDownContainerStyle={{
+            borderColor: '#ffcccc',
+          }}
+        />
+
       </View>
 
-      <View style={{
-        borderWidth: 1,
-        borderColor: '#ffcccc',
-        borderRadius: 4,
-        marginBottom: 15,
-        justifyContent: 'center',
-        height: 56
-      }}>
-        <Picker
-          selectedValue={salaryType}
-          onValueChange={(setSalaryType)}
-          prompt="Loại mức lương"
-          dropdownIconColor="#ff8888"
-        >
-          <Picker.Item label="Loại mức lương" value={null} />
-          {SALARY_TYPE_OPTIONS.map((opt) => (
-            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
-          ))}
-        </Picker>
-      </View>
 
       <TextInput
         label="Mức lương từ"
@@ -242,6 +248,28 @@ const CreateJob = () => {
         value={location}
         onChangeText={setLocation}
         style={MyStyles.formInput}
+        outlineColor="#ffcccc"
+        activeOutlineColor="#ff8888"
+      />
+
+      <TextInput
+        label="Tọa độ"
+        mode="outlined"
+        value={latitude}
+        onChangeText={setLatitude}
+        style={MyStyles.formInput}
+        keyboardType="numeric"
+        outlineColor="#ffcccc"
+        activeOutlineColor="#ff8888"
+      />
+
+      <TextInput
+        label="Tọa độ"
+        mode="outlined"
+        value={longitude}
+        onChangeText={setLongitude}
+        style={MyStyles.formInput}
+        keyboardType="numeric"
         outlineColor="#ffcccc"
         activeOutlineColor="#ff8888"
       />

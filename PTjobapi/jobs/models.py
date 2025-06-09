@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from cloudinary.models import CloudinaryField
+from multiselectfield import MultiSelectField
+
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -72,7 +74,7 @@ class Job(BaseModel):
     welfare = models.TextField()
     industry = models.ForeignKey(Industry, on_delete=models.PROTECT)
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    time_type = models.CharField(max_length=10, choices=JOB_TIME_CHOICES)
+    time_type = MultiSelectField(choices=JOB_TIME_CHOICES, max_length=100, blank=True)
     salary_from = models.DecimalField(max_digits=12, decimal_places=2)
     salary_to = models.DecimalField(max_digits=12, decimal_places=2)
     location = models.CharField(max_length=255)
