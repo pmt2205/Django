@@ -99,7 +99,7 @@ const ManageApplications = () => {
               </View>
             </View>
 
-            {(app.status === 'applied' || app.status === 'viewed') && (
+            {(app.status === 'viewed' || app.status === 'interview') && (
               <View style={{
                 flexDirection: 'row',
                 flexWrap: 'nowrap',   // Không cho xuống hàng

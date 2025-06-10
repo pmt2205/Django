@@ -17,6 +17,11 @@ const Home = () => {
     const [q, setQ] = useState('');
     const [industryId, setIndustryId] = useState(null);
     const nav = useNavigation();
+    const [totalPages, setTotalPages] = useState(1);
+    const [companyPage, setCompanyPage] = useState(1);
+    const [companyTotalPages, setCompanyTotalPages] = useState(1);
+
+
 
     const loadIndustries = async () => {
         try {
@@ -28,8 +33,6 @@ const Home = () => {
     };
 
     const loadJobs = async () => {
-        if (page === 0) return;
-
         try {
             setLoading(true);
             let url = `${endpoints['jobs']}?page=${page}`;
@@ -37,11 +40,12 @@ const Home = () => {
             if (industryId) url += `&industry_id=${industryId}`;
             const res = await Apis.get(url);
 
-            setJobs(prev => page === 1 ? res.data.results : [...prev, ...res.data.results]);
+            setJobs(res.data.results);
 
-            if (res.data.next === null) {
-                setPage(0);
-            }
+            const count = res.data.count || 0;
+            const pageSize = res.data.page_size;
+            const total = Math.ceil(count / pageSize);
+            setTotalPages(total);
         } catch (error) {
             console.error(error);
         } finally {
@@ -49,14 +53,21 @@ const Home = () => {
         }
     };
 
+
     const loadCompanies = async () => {
         try {
-            let res = await Apis.get(endpoints['companies']);
+            let url = `${endpoints['companies']}?page=${companyPage}`;
+            const res = await Apis.get(url);
             setCompanies(res.data.results);
+
+            const count = res.data.count || 0;
+            const pageSize = res.data.page_size || 5;
+            setCompanyTotalPages(Math.ceil(count / pageSize));
         } catch (error) {
             console.error(error);
         }
     };
+
 
     const handleSubmitSearch = () => {
         nav.navigate("SearchResult", { q, initialIndustryId: industryId });
@@ -66,6 +77,11 @@ const Home = () => {
         loadIndustries();
         loadCompanies();
     }, []);
+
+    useEffect(() => {
+        loadCompanies();
+    }, [companyPage]);
+
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -104,7 +120,6 @@ const Home = () => {
                         </TouchableOpacity>
                     ))}
                 </View>
-
             </View>
 
             <View style={MyStyles.industrySection}>
@@ -145,7 +160,7 @@ const Home = () => {
 
                                 <View style={MyStyles.locationBox}>
                                     <Text style={MyStyles.locationText}>
-                                        {formatToMillions(item.salary_from, item.salary_to, item.salary_type)}
+                                        {formatToMillions(item.salary_from, item.salary_to)}
                                     </Text>
                                 </View>
                             </View>
@@ -155,7 +170,36 @@ const Home = () => {
                         <ActivityIndicator size="large" style={{ marginVertical: 20 }} />
                     ) : null}
                 />
+                {totalPages > 1 && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginVertical: 10 }}>
+                        <TouchableOpacity
+                            disabled={page <= 1}
+                            style={{ marginHorizontal: 10, opacity: page <= 1 ? 0.5 : 1 }}
+                            onPress={() => {
+                                if (page > 1) setPage(page - 1);
+                            }}
+                        >
+                            <Text style={{ fontSize: 16 }}>← Trước</Text>
+                        </TouchableOpacity>
+
+                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            {page} / {totalPages}
+                        </Text>
+
+                        <TouchableOpacity
+                            disabled={page >= totalPages}
+                            style={{ marginHorizontal: 10, opacity: page >= totalPages ? 0.5 : 1 }}
+                            onPress={() => {
+                                if (page < totalPages) setPage(page + 1);
+                            }}
+                        >
+                            <Text style={{ fontSize: 16 }}>Sau →</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
+
+
 
 
             <View style={MyStyles.industrySection}>
@@ -185,6 +229,34 @@ const Home = () => {
                         );
                     }}
                 />
+                {companyTotalPages >= 1 && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 10 }}>
+                        <TouchableOpacity
+                            disabled={companyPage <= 1}
+                            style={{ marginHorizontal: 10, opacity: companyPage <= 1 ? 0.5 : 1 }}
+                            onPress={() => {
+                                if (companyPage > 1) setCompanyPage(companyPage - 1);
+                            }}
+                        >
+                            <Text style={{ fontSize: 16 }}>← Trước</Text>
+                        </TouchableOpacity>
+
+                        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            {companyPage} / {companyTotalPages}
+                        </Text>
+
+                        <TouchableOpacity
+                            disabled={companyPage >= companyTotalPages}
+                            style={{ marginHorizontal: 10, opacity: companyPage >= companyTotalPages ? 0.5 : 1 }}
+                            onPress={() => {
+                                if (companyPage < companyTotalPages) setCompanyPage(companyPage + 1);
+                            }}
+                        >
+                            <Text style={{ fontSize: 16 }}>Sau →</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
             </View>
         </>
     );

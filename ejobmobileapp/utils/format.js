@@ -1,27 +1,24 @@
 export const formatToMillions = (from, to, type) => {
-    if (type === 'project') {
-        return 'Thỏa thuận';
+    const isInvalid = val => val === null || val === undefined || isNaN(val) || val < 0;
+
+    if (isInvalid(from) && isInvalid(to)) {
+        return "Thỏa thuận";
     }
 
-    if (type === 'hourly') {
-        // Chia cho 1000 để hiển thị nghìn, làm tròn 1 chữ số thập phân nếu cần
-        const fromThousand = (from / 1000);
-        const toThousand = (to / 1000);
+    from = isInvalid(from) ? 0 : from;
+    to = isInvalid(to) ? 0 : to;
 
-        const fromStr = fromThousand % 1 === 0 ? fromThousand.toString() : fromThousand.toFixed(1);
-        const toStr = toThousand % 1 === 0 ? toThousand.toString() : toThousand.toFixed(1);
+    
 
-        return `${fromStr} - ${toStr} nghìn /giờ`;
+    const fromThousand = from / 1000;
+    const toThousand = to / 1000;
+
+    if (fromThousand === 0 && toThousand === 0) {
+        return "Thỏa thuận";
     }
 
+    const fromStr = Number.isInteger(fromThousand) ? fromThousand.toString() : fromThousand.toFixed(1);
+    const toStr = Number.isInteger(toThousand) ? toThousand.toString() : toThousand.toFixed(1);
 
-    // Các loại khác (vd: monthly)
-    const fromMil = (from / 1_000_000).toFixed(1);
-    const toMil = (to / 1_000_000).toFixed(1);
-    const suffix = 'triệu/tháng';
-
-    const fromStr = fromMil.endsWith('.0') ? parseInt(fromMil) : fromMil;
-    const toStr = toMil.endsWith('.0') ? parseInt(toMil) : toMil;
-
-    return `${fromStr} - ${toStr} ${suffix}`;
+    return `${fromStr} - ${toStr}k /giờ`;
 };

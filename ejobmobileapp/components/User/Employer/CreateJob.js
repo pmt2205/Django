@@ -9,7 +9,6 @@ import MyStyles from "../../../styles/MyStyles";
 import { set } from "date-fns";
 import DropDownPicker from "react-native-dropdown-picker";
 
-
 JOB_TIME_CHOICES = [
   ('morning', '6 - 12h'),
   ('afternoon', '12 - 18h'),
@@ -45,7 +44,9 @@ const CreateJob = () => {
   const [loading, setLoading] = useState(false);
 
 
+  
   useEffect(() => {
+
     const fetchIndustries = async () => {
       try {
         const res = await axios.get("https://tuongou.pythonanywhere.com/industries/");
@@ -67,48 +68,41 @@ const CreateJob = () => {
       setMsg("Vui lòng nhập đầy đủ các trường bắt buộc.");
       return;
     }
+
+    const payload = {
+      title,
+      description,
+      requirements,
+      welfare,
+      industry,
+      time_type: timeType.join(','),  // gửi như "morning,evening"
+      salary_from: salaryFrom ? Number(salaryFrom) : null,
+      salary_to: salaryTo ? Number(salaryTo) : null,
+      location,
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+      deadline: deadline ? deadline.toISOString().split("T")[0] : null,
+    };
+
+    console.log("Payload trước khi gửi:", payload);  // <-- đây là chỗ bạn cần kiểm tra
+
     setMsg(null);
     setLoading(true);
 
     try {
       const token = await AsyncStorage.getItem("token");
-      const payload = {
-        title,
-        description,
-        requirements,
-        welfare,
-        industry,
-        time_type: timeType,    // gửi mảng timeType
-        salary_from: salaryFrom ? Number(salaryFrom) : null,
-        salary_to: salaryTo ? Number(salaryTo) : null,
-        location,
-        latitude: Number(latitude),  // lưu ý convert sang số nếu cần
-        longitude: Number(longitude),
-        deadline: deadline ? deadline.toISOString().split("T")[0] : null,
-      };
 
-      await axios.post(
+      const response = await axios.post(
         "https://tuongou.pythonanywhere.com/jobs/create_job/",
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      console.log("Response:", response.data);  // check response
+
       setMsg("Đăng tin tuyển dụng thành công!");
 
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setRequirements("");
-      setWelfare("");
-      setIndustry(null);
-      setTimeType([]);  // reset mảng chọn
-      setSalaryFrom("");
-      setSalaryTo("");
-      setLocation("");
-      setLatitude("");
-      setLongitude("");
-      setDeadline(null);
-
+      // reset form...
     } catch (error) {
       console.error("Submit error:", error.response?.data || error.message);
       setMsg("Không thể đăng tin tuyển dụng. Vui lòng thử lại.");
@@ -116,6 +110,7 @@ const CreateJob = () => {
       setLoading(false);
     }
   };
+
 
 
 
@@ -197,23 +192,23 @@ const CreateJob = () => {
         <DropDownPicker
           multiple={true}
           open={openTimeType}
-          value={timeType}              // đây là mảng giá trị đã chọn
+          value={timeType}
           items={timeTypeOptions}
           setOpen={setOpenTimeType}
-          setValue={setTimeType}        // cập nhật mảng giá trị đã chọn
+          setValue={setTimeType}
           setItems={setTimeTypeOptions}
           placeholder="Chọn khung giờ làm việc"
-          min={0}
-          max={4}
-          listMode="MODAL"
           mode="BADGE"
           badgeColors="#fa6666"
-          badgeDotColors="#fff"
           style={{
             borderColor: '#ffcccc',
           }}
           dropDownContainerStyle={{
             borderColor: '#ffcccc',
+          }}
+          // Thêm props sau để đảm bảo giá trị đúng
+          onSelectItem={(items) => {
+            console.log("Selected items:", items);
           }}
         />
 

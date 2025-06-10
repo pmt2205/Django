@@ -16,9 +16,11 @@ const Register = () => {
     { label: "Tên", field: "first_name", icon: "account" },
     { label: "Họ và tên lót", field: "last_name", icon: "account" },
     { label: "Tên đăng nhập", field: "username", icon: "account" },
+    { label: "Email", field: "email", icon: "email" }, // 👈 THÊM DÒNG NÀY
     { label: "Mật khẩu", field: "password", icon: "lock", secure: true },
     { label: "Xác nhận mật khẩu", field: "confirm", icon: "lock", secure: true }
   ];
+
 
   const [user, setUser] = useState({ role: 'candidate' });
   const [errors, setErrors] = useState({});
@@ -47,9 +49,6 @@ const Register = () => {
       aspect: [1, 1],
       quality: 0.7
     });
-
-    console.log("Pick result:", result);
-
     if (!result.canceled) {
       setState(result.assets[0], "avatar");
       setErrors({ ...errors, avatar: null });
@@ -72,6 +71,12 @@ const Register = () => {
       newErrors.confirm = "Mật khẩu không khớp!";
       valid = false;
     }
+
+    if (user.email && !/\S+@\S+\.\S+/.test(user.email)) {
+      newErrors.email = "Email không hợp lệ!";
+      valid = false;
+    }
+
 
     if (!user.avatar) {
       newErrors.avatar = "Vui lòng chọn ảnh đại diện";
