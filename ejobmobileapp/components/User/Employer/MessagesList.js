@@ -22,7 +22,6 @@ import { db } from "../../../configs/firebaseConfig";
 import { useNavigation } from "@react-navigation/native";
 import { MyUserContext } from "../../../configs/MyContexts";
 
-
 const MessagesList = () => {
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,17 +29,17 @@ const MessagesList = () => {
   const user = useContext(MyUserContext);
   const currentUserId = String(user?.id);
 
-
   useEffect(() => {
     if (!currentUserId) return;
 
     const q = query(
       collection(db, "chatRooms"),
-      where("users", "array-contains", Number(currentUserId)) // Firestore lưu userId dạng số
+      where("users", "array-contains", Number(currentUserId))
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       setLoading(true);
+
       const rooms = await Promise.all(
         snapshot.docs.map(async (docSnap) => {
           const roomData = docSnap.data();
@@ -59,21 +58,15 @@ const MessagesList = () => {
             (u) => String(u) !== currentUserId
           );
 
-          // Lấy thông tin người dùng còn lại
           let otherUserData = null;
           try {
-  const userDoc = await getDoc(doc(db, "users", String(otherUserId)));
-  if (userDoc.exists()) {
-    const data = userDoc.data();
-    console.log("User data lấy được:", data);  // log toàn bộ dữ liệu user
-    otherUserData = data;
-  } else {
-  }
-} catch (e) {
-  console.warn("Lỗi lấy user info:", e);
-}
-
-
+            const userDoc = await getDoc(doc(db, "users", String(otherUserId)));
+            if (userDoc.exists()) {
+              otherUserData = userDoc.data();
+            }
+          } catch (e) {
+            console.warn("Lỗi lấy user info:", e);
+          }
 
           return {
             id: roomId,
@@ -86,7 +79,12 @@ const MessagesList = () => {
         })
       );
 
-      setChatRooms(rooms);
+      // ✅ Sắp xếp theo timestamp mới nhất
+      const sortedRooms = rooms
+        .filter((r) => r.timestamp) // Chỉ lấy những phòng có tin nhắn
+        .sort((a, b) => b.timestamp - a.timestamp); // Mới nhất trước
+
+      setChatRooms(sortedRooms);
       setLoading(false);
     });
 
@@ -129,7 +127,7 @@ const MessagesList = () => {
       />
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-          {item.otherUser?.username || `Ứng viên: ${item.otherUserId}`}
+          {item.otherUser?.username || `Ứng viên`}
         </Text>
         <Text
           style={{ color: "#555", marginTop: 4 }}

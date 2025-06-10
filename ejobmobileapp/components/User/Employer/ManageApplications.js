@@ -37,6 +37,7 @@ const ManageApplications = () => {
 
   useEffect(() => {
     loadApplications();
+
   }, []);
 
   const updateStatus = async (appId, newStatus) => {
@@ -57,7 +58,7 @@ const ManageApplications = () => {
       case 'applied': return '#007bff';
       case 'viewed': return '#ffa500';
       case 'interview': return '#800080';
-      case 'accepted': return '#28a745';
+      case 'accepted': return '#a5d6a7';
       case 'rejected': return '#dc3545';
       default: return '#6c757d';
     }
@@ -99,13 +100,13 @@ const ManageApplications = () => {
               </View>
             </View>
 
-            {(app.status === 'viewed' || app.status === 'interview') && (
+            {(app.status !== 'rejected' && app.status !== 'accepted') && (
               <View style={{
                 flexDirection: 'row',
-                flexWrap: 'nowrap',   // Không cho xuống hàng
-                justifyContent: 'space-around', // Cách đều các nút
+                flexWrap: 'nowrap',
+                justifyContent: 'space-around',
                 marginBottom: 15,
-                paddingHorizontal: 10, // padding 2 bên cho đẹp
+                paddingHorizontal: 10,
               }}>
                 {[
                   { label: 'Đã xem', value: 'viewed', color: '#ffcc80' },

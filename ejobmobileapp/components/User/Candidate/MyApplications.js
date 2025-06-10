@@ -72,7 +72,7 @@ const MyApplications = ({ navigation }) => {
                 <Text style={MyStyles.listDescription}>
                   {app.job.company.name}
                 </Text>
-                <Text style={[MyStyles.listDescription, { color: '#d40000' }]}>
+                <Text style={[MyStyles.listDescription, { color: '#0055d4' }]}>
                   Trạng thái: {app.status_display || app.status}
                 </Text>
                 <Text style={MyStyles.listDescription}>
