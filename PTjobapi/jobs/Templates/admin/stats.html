@@ -1,49 +1,285 @@
 {% extends 'admin/base_site.html' %}
-{% block content %}
-<h1>THỐNG KÊ THÔNG TIN VIỆC LÀM</h1>
-<h2>Số lượng khoá học: {{ course_count }}</h2>
-<ul>
-    {% for s in stats %}
-    <li>
-        {{ s.id }} - {{ s.name }}: {{ s.job_count }}
-    </li>
-    {% endfor %}
-</ul>
 
-<div style="width: 40%">
-  <canvas id="myChart"></canvas>
+{% block content %}
+<h1>Thống kê và báo cáo</h1>
+
+<style>
+  .charts-row {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 60px;
+  }
+  .chart-container {
+    flex: 1 1 45%;
+    max-width: 700px;
+  }
+  .chart-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .total-count {
+    font-size: 1.1em;
+    margin-bottom: 8px;
+    color: #555;
+  }
+</style>
+
+<!-- Việc làm: Bar chart + Pie chart -->
+<div class="charts-row">
+  <div class="chart-container">
+    <div class="chart-header">Việc làm theo thời gian (Bar Chart)</div>
+    <div class="total-count">Tổng số việc làm: <strong>{{ job_total }}</strong></div>
+    <canvas id="jobBarChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <div class="chart-header">Tỷ lệ việc làm theo thời gian (Pie Chart)</div>
+    <canvas id="jobPieChart"></canvas>
+  </div>
+</div>
+
+<!-- Ứng viên: Bar chart + Pie chart -->
+<div class="charts-row">
+  <div class="chart-container">
+    <div class="chart-header">Ứng viên theo thời gian (Bar Chart)</div>
+    <div class="total-count">Tổng số ứng viên: <strong>{{ candidate_total }}</strong></div>
+    <canvas id="candidateBarChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <div class="chart-header">Tỷ lệ ứng viên theo thời gian (Pie Chart)</div>
+    <canvas id="candidatePieChart"></canvas>
+  </div>
+</div>
+
+<!-- Nhà tuyển dụng: Bar chart + Pie chart -->
+<div class="charts-row">
+  <div class="chart-container">
+    <div class="chart-header">Nhà tuyển dụng theo thời gian (Bar Chart)</div>
+    <div class="total-count">Tổng số nhà tuyển dụng: <strong>{{ employer_total }}</strong></div>
+    <canvas id="employerBarChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <div class="chart-header">Tỷ lệ nhà tuyển dụng theo thời gian (Pie Chart)</div>
+    <canvas id="employerPieChart"></canvas>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let data =[];
-let labels = [];
-{% for s in stats %}
-    data.push({{ s.job_count }})
-    labels.push('{{ s.name }}')
+  function percent(value, total) {
+    if (total === 0) return '0%';
+    return ((value / total) * 100).toFixed(2) + '%';
+  }
 
-{% endfor %}
-     window.onload = function() {
-     const ctx = document.getElementById('myChart');
+  window.onload = function () {
+    // Việc làm Bar Chart
+    const jobBarCtx = document.getElementById('jobBarChart').getContext('2d');
+    const jobBarChart = new Chart(jobBarCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ job_labels|safe }},
+        datasets: [{
+          label: 'Số lượng việc làm',
+          data: {{ job_data|safe }},
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: { duration: 1000, easing: 'easeOutBounce' },
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'Việc làm theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed.y;
+                let total = {{ job_total }};
+                return context.dataset.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
 
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: '# Số lượng',
-        data: data,
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true
+    // Việc làm Pie Chart
+    const jobPieCtx = document.getElementById('jobPieChart').getContext('2d');
+    const jobPieChart = new Chart(jobPieCtx, {
+      type: 'pie',
+      data: {
+        labels: {{ job_labels|safe }},
+        datasets: [{
+          label: 'Tỷ lệ việc làm theo tháng',
+          data: {{ job_data|safe }},
+          backgroundColor: [
+            '#36A2EB', '#4BC0C0', '#FF6384', '#FFCE56', '#9966FF',
+            '#FF9F40', '#C9CBCF', '#B0E0E6', '#FF7F50', '#D2691E'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right' },
+          title: { display: true, text: 'Tỷ lệ việc làm theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed;
+                let total = {{ job_total }};
+                return context.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
         }
       }
-    }
-  });
-     }
+    });
+
+    // Ứng viên Bar Chart
+    const candidateBarCtx = document.getElementById('candidateBarChart').getContext('2d');
+    const candidateBarChart = new Chart(candidateBarCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ candidate_labels|safe }},
+        datasets: [{
+          label: 'Số lượng ứng viên',
+          data: {{ candidate_data|safe }},
+          backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: { duration: 1000, easing: 'easeOutBounce' },
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'Ứng viên theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed.y;
+                let total = {{ candidate_total }};
+                return context.dataset.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Ứng viên Pie Chart
+    const candidatePieCtx = document.getElementById('candidatePieChart').getContext('2d');
+    const candidatePieChart = new Chart(candidatePieCtx, {
+      type: 'pie',
+      data: {
+        labels: {{ candidate_labels|safe }},
+        datasets: [{
+          label: 'Tỷ lệ ứng viên theo tháng',
+          data: {{ candidate_data|safe }},
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#C9CBCF', '#B0E0E6', '#FF7F50', '#D2691E'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right' },
+          title: { display: true, text: 'Tỷ lệ ứng viên theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed;
+                let total = {{ candidate_total }};
+                return context.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Nhà tuyển dụng Bar Chart
+    const employerBarCtx = document.getElementById('employerBarChart').getContext('2d');
+    const employerBarChart = new Chart(employerBarCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ employer_labels|safe }},
+        datasets: [{
+          label: 'Số lượng nhà tuyển dụng',
+          data: {{ employer_data|safe }},
+          backgroundColor: 'rgba(75, 192, 192, 0.7)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: { duration: 1000, easing: 'easeOutBounce' },
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'Nhà tuyển dụng theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed.y;
+                let total = {{ employer_total }};
+                return context.dataset.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
+        },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    // Nhà tuyển dụng Pie Chart
+    const employerPieCtx = document.getElementById('employerPieChart').getContext('2d');
+    const employerPieChart = new Chart(employerPieCtx, {
+      type: 'pie',
+      data: {
+        labels: {{ employer_labels|safe }},
+        datasets: [{
+          label: 'Tỷ lệ nhà tuyển dụng theo tháng',
+          data: {{ employer_data|safe }},
+          backgroundColor: [
+            '#4BC0C0', '#FF6384', '#FFCE56', '#36A2EB', '#9966FF',
+            '#FF9F40', '#C9CBCF', '#B0E0E6', '#FF7F50', '#D2691E'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'right' },
+          title: { display: true, text: 'Tỷ lệ nhà tuyển dụng theo tháng' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                let value = context.parsed;
+                let total = {{ employer_total }};
+                return context.label + ': ' + value + ' (' + percent(value, total) + ')';
+              }
+            }
+          }
+        }
+      }
+    });
+
+  };
 </script>
 {% endblock %}
+

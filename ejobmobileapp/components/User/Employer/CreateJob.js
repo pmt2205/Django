@@ -8,6 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MyStyles from "../../../styles/MyStyles";
 import { set } from "date-fns";
 import DropDownPicker from "react-native-dropdown-picker";
+import { authApis } from "../../../configs/Apis";
 
 JOB_TIME_CHOICES = [
   ('morning', '6 - 12h'),
@@ -44,7 +45,7 @@ const CreateJob = () => {
   const [loading, setLoading] = useState(false);
 
 
-  
+
   useEffect(() => {
 
     const fetchIndustries = async () => {
@@ -84,7 +85,6 @@ const CreateJob = () => {
       deadline: deadline ? deadline.toISOString().split("T")[0] : null,
     };
 
-    console.log("Payload trước khi gửi:", payload);  // <-- đây là chỗ bạn cần kiểm tra
 
     setMsg(null);
     setLoading(true);
@@ -92,13 +92,8 @@ const CreateJob = () => {
     try {
       const token = await AsyncStorage.getItem("token");
 
-      const response = await axios.post(
-        "https://tuongou.pythonanywhere.com/jobs/create_job/",
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await authApis(token).post("/jobs/create_job/", payload);
 
-      console.log("Response:", response.data);  // check response
 
       setMsg("Đăng tin tuyển dụng thành công!");
 
@@ -115,7 +110,11 @@ const CreateJob = () => {
 
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
+    <ScrollView
+      contentContainerStyle={{ padding: 20 }}
+      nestedScrollEnabled={true}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={MyStyles.sectionTitle}>Đăng tin tuyển dụng</Text>
       {loading && (
         <ActivityIndicator size="large" color="#fa6666" style={{ marginVertical: 10 }} />
@@ -198,6 +197,8 @@ const CreateJob = () => {
           setValue={setTimeType}
           setItems={setTimeTypeOptions}
           placeholder="Chọn khung giờ làm việc"
+          nestedScrollEnabled={true}
+          listMode="SCROLLVIEW"
           mode="BADGE"
           badgeColors="#fa6666"
           style={{
@@ -206,11 +207,10 @@ const CreateJob = () => {
           dropDownContainerStyle={{
             borderColor: '#ffcccc',
           }}
-          // Thêm props sau để đảm bảo giá trị đúng
           onSelectItem={(items) => {
-            console.log("Selected items:", items);
           }}
         />
+
 
       </View>
 

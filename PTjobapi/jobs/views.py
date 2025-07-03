@@ -10,6 +10,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
+
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
@@ -110,7 +112,11 @@ class JobViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIVie
 
         time_type = self.request.query_params.get('time_type')
         if time_type:
-            queryset = queryset.filter(time_type=time_type)
+            types = time_type.split(",")
+            q = Q()
+            for t in types:
+                q |= Q(time_type__icontains=t)
+            queryset = queryset.filter(q)
 
         location = self.request.query_params.get('location')
         if location:

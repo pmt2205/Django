@@ -140,6 +140,9 @@ const SearchResult = () => {
                                 placeholder="Chọn khung giờ làm việc"
                                 mode="BADGE"
                                 badgeColors="#fa6666"
+                                listMode="SCROLLVIEW"
+
+
                                 style={{
                                     borderColor: '#ffcccc',
                                     borderWidth: 1,
